@@ -1,0 +1,60 @@
+# ========================================
+# KubeStock Development Environment Variables
+# ========================================
+# 
+# Copy this file to terraform.tfvars and fill in your actual values:
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# ⚠️  IMPORTANT: Never commit terraform.tfvars to version control!
+#     Add it to .gitignore to protect sensitive data.
+#
+
+# AWS Region and Availability Zone
+# For cost optimization, we use a single AZ
+aws_region        = "us-east-1"
+availability_zone = "us-east-1a"
+
+# Your Public IP Address
+# Used to restrict SSH and K8s API access
+# Find your IP: curl ifconfig.me
+# Format: Must include /32 for single IP
+my_ip = "203.0.113.42/32"  # REPLACE with your actual IP
+
+# RDS PostgreSQL Password
+# Requirements: 8+ characters, mix of upper/lower/numbers/symbols
+rds_password = "YourSecurePassword123!"  # REPLACE with a strong password
+
+# RDS PostgreSQL Username (optional, defaults to "kubestock")
+# rds_user = "kubestock"
+
+# SSH Public Key Path
+# Path to your SSH public key for EC2 access
+# Default: ~/.ssh/kubestock-dev-key.pub
+ssh_public_key_path = "~/.ssh/kubestock-dev-key.pub"
+
+# VPC CIDR (optional, defaults provided)
+# Uncomment to customize
+# vpc_cidr            = "10.0.0.0/16"
+# public_subnet_cidr  = "10.0.1.0/24"
+# private_subnet_cidr = "10.0.10.0/24"
+
+# ========================================
+# Quick Start Checklist:
+# ========================================
+# 
+# [ ] 1. Generate SSH key:
+#        ssh-keygen -t rsa -b 4096 -f ~/.ssh/kubestock-dev-key
+#
+# [ ] 2. Find your public IP:
+#        curl ifconfig.me
+#
+# [ ] 3. Copy this file:
+#        cp terraform.tfvars.example terraform.tfvars
+#
+# [ ] 4. Edit terraform.tfvars with your values
+#
+# [ ] 5. Run Terraform:
+#        terraform init
+#        terraform plan
+#        terraform apply
+#
