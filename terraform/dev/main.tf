@@ -1,11 +1,12 @@
 terraform {
   required_version = ">= 1.5"
 
-  backend "remote" {
-    organization = "kubestock-org"
-    workspaces {
-      name = "kubestock-dev"
-    }
+  backend "s3" {
+    bucket       = "kubestock-terraform-state"
+    key          = "dev/terraform.tfstate"
+    region       = "us-east-1"
+    use_lockfile = true
+    encrypt      = true
   }
 
   required_providers {

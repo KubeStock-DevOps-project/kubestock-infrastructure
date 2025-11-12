@@ -1,0 +1,12 @@
+# AWS Configuration
+aws_region     = "us-east-1"
+aws_access_key = "YOUR_AWS_ACCESS_KEY"
+aws_secret_key = "YOUR_AWS_SECRET_KEY"
+
+# Project Configuration
+project_name = "kubestock"
+
+# S3 Backend Resources
+# Note: Bucket names must be globally unique across all AWS accounts
+# Add a random suffix if this name is taken: kubestock-terraform-state-abc123
+state_bucket_name = "kubestock-terraform-state"
