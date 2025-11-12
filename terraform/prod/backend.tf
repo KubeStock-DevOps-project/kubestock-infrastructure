@@ -9,8 +9,6 @@ terraform {
     bucket = "kubestock-terraform-state" # Placeholder - update with actual bucket name
     key    = "terraform.tfstate"
     region = "us-east-1"
-    # Optional: Uncomment below if using DynamoDB for state locking
-    # dynamodb_table = "kubestock-terraform-locks"
-    # encrypt        = true
+    use_lockfile = true
   }
 }
