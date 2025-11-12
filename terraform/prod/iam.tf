@@ -3,7 +3,7 @@
 # ========================================
 
 resource "aws_iam_role" "k8s_nodes" {
-  name = "kubestock-prod-node-role"
+  name = "kubestock-node-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -19,7 +19,7 @@ resource "aws_iam_role" "k8s_nodes" {
   })
 
   tags = {
-    Name = "kubestock-prod-node-role"
+    Name = "kubestock-node-role"
   }
 }
 
@@ -28,7 +28,7 @@ resource "aws_iam_role" "k8s_nodes" {
 # ========================================
 
 resource "aws_iam_policy" "k8s_controllers" {
-  name        = "kubestock-prod-k8s-controllers-policy"
+  name        = "kubestock-k8s-controllers-policy"
   description = "Permissions for Kubernetes AWS controllers (Cluster Autoscaler, EBS CSI, AWS LB Controller)"
 
   policy = jsonencode({
@@ -135,7 +135,7 @@ resource "aws_iam_policy" "k8s_controllers" {
   })
 
   tags = {
-    Name = "kubestock-prod-k8s-controllers-policy"
+    Name = "kubestock-k8s-controllers-policy"
   }
 }
 
@@ -159,10 +159,10 @@ resource "aws_iam_role_policy_attachment" "k8s_nodes_ssm" {
 # ========================================
 
 resource "aws_iam_instance_profile" "k8s_nodes" {
-  name = "kubestock-prod-node-profile"
+  name = "kubestock-node-profile"
   role = aws_iam_role.k8s_nodes.name
 
   tags = {
-    Name = "kubestock-prod-node-profile"
+    Name = "kubestock-node-profile"
   }
 }

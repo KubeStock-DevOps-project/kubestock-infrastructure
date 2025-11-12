@@ -4,7 +4,7 @@
 
 # DB Subnet Group (Must use all 3 private subnets)
 resource "aws_db_subnet_group" "kubestock" {
-  name = "kubestock-prod-db-subnet-group"
+  name = "kubestock-db-subnet-group"
   
   # CRITICAL: RDS subnet groups require at least 2 subnets in different AZs
   # We include all 3 private subnets to meet this requirement
@@ -15,13 +15,13 @@ resource "aws_db_subnet_group" "kubestock" {
   ]
 
   tags = {
-    Name = "kubestock-prod-db-subnet-group"
+    Name = "kubestock-db-subnet-group"
   }
 }
 
 # RDS Instance (Single-AZ for cost savings)
 resource "aws_db_instance" "kubestock" {
-  identifier              = "kubestock-prod-db"
+  identifier              = "kubestock-db"
   engine                  = "postgres"
   engine_version          = "16.6"
   instance_class          = var.rds_instance_class
@@ -40,7 +40,7 @@ resource "aws_db_instance" "kubestock" {
   # Production settings
   publicly_accessible     = false
   skip_final_snapshot     = false
-  final_snapshot_identifier = "kubestock-prod-db-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
+  final_snapshot_identifier = "kubestock-db-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
   backup_retention_period = 7
   backup_window           = "03:00-04:00"
   maintenance_window      = "sun:04:00-sun:05:00"
@@ -52,7 +52,7 @@ resource "aws_db_instance" "kubestock" {
   deletion_protection = true
 
   tags = {
-    Name = "kubestock-prod-db"
+    Name = "kubestock-db"
   }
 
   lifecycle {

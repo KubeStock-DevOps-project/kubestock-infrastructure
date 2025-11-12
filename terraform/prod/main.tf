@@ -19,7 +19,7 @@ provider "aws" {
   default_tags {
     tags = {
       Project     = "KubeStock"
-      Environment = "prod"
+      Environment = var.environment
       ManagedBy   = "Terraform"
     }
   }

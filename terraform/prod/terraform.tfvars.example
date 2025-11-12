@@ -17,7 +17,7 @@ aws_region = "us-east-1"
 my_ip = "1.2.3.4/32"
 
 # Path to your SSH public key
-ssh_public_key_path = "~/.ssh/kubestock-prod-key.pub"
+ssh_public_key_path = "~/.ssh/kubestock-key.pub"
 
 # ========================================
 # Database Credentials

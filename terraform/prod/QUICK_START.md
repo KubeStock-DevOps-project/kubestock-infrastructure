@@ -1,4 +1,4 @@
-# Quick Start Guide - KubeStock Production
+# Quick Start Guide - KubeStock Infrastructure
 
 ## Prerequisites Checklist
 
@@ -12,7 +12,7 @@
 ## Step 1: Generate SSH Key
 
 ```bash
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/kubestock-prod-key -C "kubestock-prod"
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/kubestock-key -C "kubestock"
 ```
 
 ---
@@ -21,16 +21,16 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/kubestock-prod-key -C "kubestock-prod"
 
 ```bash
 # Create the S3 bucket (replace with your bucket name)
-aws s3 mb s3://kubestock-terraform-state-prod --region us-east-1
+aws s3 mb s3://kubestock-terraform-state --region us-east-1
 
 # Enable versioning
 aws s3api put-bucket-versioning \
-  --bucket kubestock-terraform-state-prod \
+  --bucket kubestock-terraform-state \
   --versioning-configuration Status=Enabled
 
 # Enable encryption
 aws s3api put-bucket-encryption \
-  --bucket kubestock-terraform-state-prod \
+  --bucket kubestock-terraform-state \
   --server-side-encryption-configuration '{
     "Rules": [{
       "ApplyServerSideEncryptionByDefault": {
@@ -41,7 +41,7 @@ aws s3api put-bucket-encryption \
 
 # Block public access
 aws s3api put-public-access-block \
-  --bucket kubestock-terraform-state-prod \
+  --bucket kubestock-terraform-state \
   --public-access-block-configuration \
   "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
 ```
@@ -55,8 +55,8 @@ Edit `backend.tf` and replace the placeholder bucket name:
 ```hcl
 terraform {
   backend "s3" {
-    bucket = "kubestock-terraform-state-prod"  # Your actual bucket name
-    key    = "prod/terraform.tfstate"
+    bucket = "kubestock-terraform-state"  # Your actual bucket name
+    key    = "terraform.tfstate"
     region = "us-east-1"
   }
 }
@@ -82,7 +82,7 @@ nano terraform.tfvars
 ```hcl
 my_ip                = "YOUR_IP_HERE/32"
 rds_password         = "YOUR_STRONG_PASSWORD_HERE"
-ssh_public_key_path  = "~/.ssh/kubestock-prod-key.pub"
+ssh_public_key_path  = "~/.ssh/kubestock-key.pub"
 ```
 
 ---
@@ -147,7 +147,7 @@ terraform output rds_endpoint
 BASTION_IP=$(terraform output -raw bastion_public_ip)
 
 # SSH to bastion
-ssh -i ~/.ssh/kubestock-prod-key ubuntu@$BASTION_IP
+ssh -i ~/.ssh/kubestock-key ubuntu@$BASTION_IP
 ```
 
 ---
@@ -160,7 +160,7 @@ BASTION_IP=$(terraform output -raw bastion_public_ip)
 CONTROL_PLANE_IP=$(terraform output -raw control_plane_private_ip)
 
 # SSH to control plane through bastion
-ssh -i ~/.ssh/kubestock-prod-key -J ubuntu@$BASTION_IP ubuntu@$CONTROL_PLANE_IP
+ssh -i ~/.ssh/kubestock-key -J ubuntu@$BASTION_IP ubuntu@$CONTROL_PLANE_IP
 ```
 
 ---
@@ -287,6 +287,6 @@ For issues or questions:
 
 ---
 
-**Environment**: Production  
+**Environment**: KubeStock Infrastructure  
 **Project**: KubeStock  
 **Last Updated**: 2025-11-13

@@ -6,11 +6,11 @@
 
 terraform {
   backend "s3" {
-    bucket = "kubestock-terraform-state-prod" # Placeholder - update with actual bucket name
-    key    = "prod/terraform.tfstate"
+    bucket = "kubestock-terraform-state" # Placeholder - update with actual bucket name
+    key    = "terraform.tfstate"
     region = "us-east-1"
     # Optional: Uncomment below if using DynamoDB for state locking
-    # dynamodb_table = "kubestock-terraform-locks-prod"
+    # dynamodb_table = "kubestock-terraform-locks"
     # encrypt        = true
   }
 }

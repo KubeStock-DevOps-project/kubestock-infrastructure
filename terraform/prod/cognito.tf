@@ -3,7 +3,7 @@
 # ========================================
 
 resource "aws_cognito_user_pool" "kubestock" {
-  name = "kubestock-prod-user-pool"
+  name = "kubestock-user-pool"
 
   auto_verified_attributes = ["email"]
 
@@ -41,7 +41,7 @@ resource "aws_cognito_user_pool" "kubestock" {
   }
 
   tags = {
-    Name = "kubestock-prod-user-pool"
+    Name = "kubestock-user-pool"
   }
 }
 
@@ -50,7 +50,7 @@ resource "aws_cognito_user_pool" "kubestock" {
 # ========================================
 
 resource "aws_cognito_user_pool_client" "kubestock" {
-  name         = "kubestock-prod-client"
+  name         = "kubestock-client"
   user_pool_id = aws_cognito_user_pool.kubestock.id
 
   explicit_auth_flows = [

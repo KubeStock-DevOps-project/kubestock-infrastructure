@@ -61,7 +61,7 @@ output "bastion_public_ip" {
 
 output "bastion_ssh_command" {
   description = "SSH command to connect to the bastion host"
-  value       = "ssh -i ~/.ssh/kubestock-prod-key ubuntu@${aws_eip.bastion.public_ip}"
+  value       = "ssh -i ~/.ssh/kubestock-key ubuntu@${aws_eip.bastion.public_ip}"
 }
 
 # ========================================
@@ -80,7 +80,7 @@ output "control_plane_instance_id" {
 
 output "control_plane_ssh_via_bastion" {
   description = "SSH command to connect to control plane via bastion"
-  value       = "ssh -i ~/.ssh/kubestock-prod-key -J ubuntu@${aws_eip.bastion.public_ip} ubuntu@${aws_instance.control_plane.private_ip}"
+  value       = "ssh -i ~/.ssh/kubestock-key -J ubuntu@${aws_eip.bastion.public_ip} ubuntu@${aws_instance.control_plane.private_ip}"
 }
 
 # ========================================
@@ -162,7 +162,7 @@ output "rds_database_name" {
 
 output "rds_port_forward_command" {
   description = "SSH command to set up port forwarding to RDS via bastion"
-  value       = "ssh -i ~/.ssh/kubestock-prod-key -L 5432:${aws_db_instance.kubestock.address}:5432 -J ubuntu@${aws_eip.bastion.public_ip} ubuntu@${aws_instance.control_plane.private_ip}"
+  value       = "ssh -i ~/.ssh/kubestock-key -L 5432:${aws_db_instance.kubestock.address}:5432 -J ubuntu@${aws_eip.bastion.public_ip} ubuntu@${aws_instance.control_plane.private_ip}"
 }
 
 # ========================================
@@ -233,14 +233,14 @@ output "sg_nlb_api_id" {
 
 output "kubectl_config_command" {
   description = "Command to configure kubectl (run after K8s is installed)"
-  value       = "scp -i ~/.ssh/kubestock-prod-key -J ubuntu@${aws_eip.bastion.public_ip} ubuntu@${aws_instance.control_plane.private_ip}:~/.kube/config ~/.kube/config-kubestock-prod"
+  value       = "scp -i ~/.ssh/kubestock-key -J ubuntu@${aws_eip.bastion.public_ip} ubuntu@${aws_instance.control_plane.private_ip}:~/.kube/config ~/.kube/config-kubestock"
 }
 
 output "cluster_info" {
   description = "Cluster information summary"
   value = {
-    name                  = "kubestock-prod"
-    environment           = "prod"
+    name                  = "kubestock"
+    environment           = var.environment
     network_architecture  = "3-AZ HA (3 public + 3 private subnets)"
     compute_architecture  = "Non-HA (1 control plane, 1 worker ASG spanning 3 AZs)"
     database_architecture = "Single-AZ RDS (cost-optimized)"

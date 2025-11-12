@@ -1,8 +1,8 @@
-# KubeStock Production Infrastructure
+# KubeStock Infrastructure
 
 ## Overview
 
-This Terraform configuration deploys the **KubeStock Production** infrastructure on AWS with a strategic hybrid approach:
+This Terraform configuration deploys the **KubeStock** infrastructure on AWS with a strategic hybrid approach:
 
 - **Network**: **3-AZ High Availability** (3 public + 3 private subnets)
 - **Compute**: **Non-HA "Sprint" Configuration** (1 control plane, 1 worker ASG for cost savings)
@@ -52,7 +52,7 @@ This setup provides a production-grade network foundation that can easily scale 
 2. **Terraform** >= 1.5 installed
 3. **SSH Key Pair** generated:
    ```bash
-   ssh-keygen -t rsa -b 4096 -f ~/.ssh/kubestock-prod-key -C "kubestock-prod"
+   ssh-keygen -t rsa -b 4096 -f ~/.ssh/kubestock-key -C "kubestock-prod"
    ```
 4. **S3 Bucket** for Terraform state (update `backend.tf` with actual bucket name)
 
@@ -103,21 +103,21 @@ Type `yes` when prompted to confirm deployment.
 
 ```bash
 # SSH to bastion
-ssh -i ~/.ssh/kubestock-prod-key ubuntu@<BASTION_PUBLIC_IP>
+ssh -i ~/.ssh/kubestock-key ubuntu@<BASTION_PUBLIC_IP>
 ```
 
 ### Access Control Plane via Bastion
 
 ```bash
 # SSH to control plane through bastion
-ssh -i ~/.ssh/kubestock-prod-key -J ubuntu@<BASTION_PUBLIC_IP> ubuntu@<CONTROL_PLANE_PRIVATE_IP>
+ssh -i ~/.ssh/kubestock-key -J ubuntu@<BASTION_PUBLIC_IP> ubuntu@<CONTROL_PLANE_PRIVATE_IP>
 ```
 
 ### Port Forward to RDS
 
 ```bash
 # Forward local port 5432 to RDS
-ssh -i ~/.ssh/kubestock-prod-key -L 5432:<RDS_ADDRESS>:5432 -J ubuntu@<BASTION_PUBLIC_IP> ubuntu@<CONTROL_PLANE_PRIVATE_IP>
+ssh -i ~/.ssh/kubestock-key -L 5432:<RDS_ADDRESS>:5432 -J ubuntu@<BASTION_PUBLIC_IP> ubuntu@<CONTROL_PLANE_PRIVATE_IP>
 ```
 
 ### Get Outputs

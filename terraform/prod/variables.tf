@@ -19,9 +19,9 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "The environment name (prod)"
+  description = "The environment name"
   type        = string
-  default     = "prod"
+  default     = "production"
 }
 
 # ========================================
@@ -74,7 +74,7 @@ variable "my_ip" {
 variable "ssh_public_key_path" {
   description = "Path to the SSH public key file"
   type        = string
-  default     = "~/.ssh/kubestock-prod-key.pub"
+  default     = "~/.ssh/kubestock-key.pub"
 }
 
 # ========================================

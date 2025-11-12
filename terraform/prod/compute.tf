@@ -3,11 +3,11 @@
 # ========================================
 
 resource "aws_key_pair" "kubestock" {
-  key_name   = "kubestock-prod-key"
+  key_name   = "kubestock-key"
   public_key = file(var.ssh_public_key_path)
 
   tags = {
-    Name = "kubestock-prod-key"
+    Name = "kubestock-key"
   }
 }
 
@@ -20,7 +20,7 @@ resource "aws_eip" "bastion" {
   instance = aws_instance.bastion.id
 
   tags = {
-    Name = "kubestock-prod-bastion-eip"
+    Name = "kubestock-bastion-eip"
   }
 }
 
@@ -42,7 +42,7 @@ resource "aws_instance" "bastion" {
   }
 
   tags = {
-    Name = "kubestock-prod-bastion"
+    Name = "kubestock-bastion"
     Role = "bastion"
   }
 }
@@ -63,10 +63,10 @@ resource "aws_instance" "control_plane" {
   }
 
   tags = {
-    Name                                        = "kubestock-prod-control-plane"
+    Name                                        = "kubestock-control-plane"
     Role                                        = "control-plane"
-    "kubernetes.io/cluster/kubestock-prod"      = "owned"
-    "k8s.io/cluster-autoscaler/kubestock-prod"  = "owned"
+    "kubernetes.io/cluster/kubestock"      = "owned"
+    "k8s.io/cluster-autoscaler/kubestock"  = "owned"
     "k8s.io/cluster-autoscaler/enabled"         = "true"
   }
 }
@@ -76,7 +76,7 @@ resource "aws_instance" "control_plane" {
 # ========================================
 
 resource "aws_launch_template" "worker" {
-  name_prefix   = "kubestock-prod-worker-"
+  name_prefix   = "kubestock-worker-"
   image_id      = data.aws_ami.ubuntu.id
   instance_type = var.worker_instance_type
   key_name      = aws_key_pair.kubestock.key_name
@@ -103,10 +103,10 @@ resource "aws_launch_template" "worker" {
   tag_specifications {
     resource_type = "instance"
     tags = {
-      Name                                        = "kubestock-prod-worker"
+      Name                                        = "kubestock-worker"
       Role                                        = "worker"
-      "kubernetes.io/cluster/kubestock-prod"      = "owned"
-      "k8s.io/cluster-autoscaler/kubestock-prod"  = "owned"
+      "kubernetes.io/cluster/kubestock"      = "owned"
+      "k8s.io/cluster-autoscaler/kubestock"  = "owned"
       "k8s.io/cluster-autoscaler/enabled"         = "true"
     }
   }
@@ -114,12 +114,12 @@ resource "aws_launch_template" "worker" {
   tag_specifications {
     resource_type = "volume"
     tags = {
-      Name = "kubestock-prod-worker-volume"
+      Name = "kubestock-worker-volume"
     }
   }
 
   tags = {
-    Name = "kubestock-prod-worker-launch-template"
+    Name = "kubestock-worker-launch-template"
   }
 }
 
@@ -130,7 +130,7 @@ resource "aws_launch_template" "worker" {
 # However, we start with min=1, desired=1 for cost savings.
 
 resource "aws_autoscaling_group" "workers" {
-  name = "kubestock-prod-workers-asg"
+  name = "kubestock-workers-asg"
   
   # CRITICAL: Use all 3 private subnets across 3 AZs
   vpc_zone_identifier = [
@@ -154,7 +154,7 @@ resource "aws_autoscaling_group" "workers" {
 
   tag {
     key                 = "Name"
-    value               = "kubestock-prod-worker"
+    value               = "kubestock-worker"
     propagate_at_launch = true
   }
 
@@ -165,13 +165,13 @@ resource "aws_autoscaling_group" "workers" {
   }
 
   tag {
-    key                 = "kubernetes.io/cluster/kubestock-prod"
+    key                 = "kubernetes.io/cluster/kubestock"
     value               = "owned"
     propagate_at_launch = true
   }
 
   tag {
-    key                 = "k8s.io/cluster-autoscaler/kubestock-prod"
+    key                 = "k8s.io/cluster-autoscaler/kubestock"
     value               = "owned"
     propagate_at_launch = true
   }

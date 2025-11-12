@@ -8,7 +8,7 @@ resource "aws_vpc" "kubestock_vpc" {
   enable_dns_support   = true
 
   tags = {
-    Name = "kubestock-prod-vpc"
+    Name = "kubestock-vpc"
   }
 }
 
@@ -20,7 +20,7 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.kubestock_vpc.id
 
   tags = {
-    Name = "kubestock-prod-igw"
+    Name = "kubestock-igw"
   }
 }
 
@@ -36,7 +36,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "kubestock-prod-public-subnet-${var.availability_zones[count.index]}"
+    Name = "kubestock-public-subnet-${var.availability_zones[count.index]}"
     Tier = "public"
   }
 }
@@ -52,7 +52,7 @@ resource "aws_subnet" "private" {
   availability_zone = var.availability_zones[count.index]
 
   tags = {
-    Name = "kubestock-prod-private-subnet-${var.availability_zones[count.index]}"
+    Name = "kubestock-private-subnet-${var.availability_zones[count.index]}"
     Tier = "private"
   }
 }
@@ -68,7 +68,7 @@ resource "aws_eip" "nat" {
   depends_on = [aws_internet_gateway.igw]
 
   tags = {
-    Name = "kubestock-prod-nat-eip"
+    Name = "kubestock-nat-eip"
   }
 }
 
@@ -78,7 +78,7 @@ resource "aws_nat_gateway" "nat" {
   depends_on    = [aws_internet_gateway.igw]
 
   tags = {
-    Name = "kubestock-prod-nat"
+    Name = "kubestock-nat"
   }
 }
 
@@ -95,7 +95,7 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name = "kubestock-prod-public-rt"
+    Name = "kubestock-public-rt"
   }
 }
 
@@ -122,7 +122,7 @@ resource "aws_route_table" "private" {
   }
 
   tags = {
-    Name = "kubestock-prod-private-rt-${var.availability_zones[count.index]}"
+    Name = "kubestock-private-rt-${var.availability_zones[count.index]}"
   }
 }
 
@@ -139,7 +139,7 @@ resource "aws_route_table_association" "private" {
 
 # Bastion Host Security Group
 resource "aws_security_group" "bastion" {
-  name        = "kubestock-prod-sg-bastion"
+  name        = "kubestock-sg-bastion"
   description = "Security group for bastion host - SSH access only"
   vpc_id      = aws_vpc.kubestock_vpc.id
 
@@ -160,13 +160,13 @@ resource "aws_security_group" "bastion" {
   }
 
   tags = {
-    Name = "kubestock-prod-sg-bastion"
+    Name = "kubestock-sg-bastion"
   }
 }
 
 # Kubernetes Nodes Security Group (Control Plane + Workers)
 resource "aws_security_group" "k8s_nodes" {
-  name        = "kubestock-prod-sg-k8s-nodes"
+  name        = "kubestock-sg-k8s-nodes"
   description = "Security group for Kubernetes control plane and worker nodes"
   vpc_id      = aws_vpc.kubestock_vpc.id
 
@@ -206,13 +206,13 @@ resource "aws_security_group" "k8s_nodes" {
   }
 
   tags = {
-    Name = "kubestock-prod-sg-k8s-nodes"
+    Name = "kubestock-sg-k8s-nodes"
   }
 }
 
 # RDS Security Group
 resource "aws_security_group" "rds" {
-  name        = "kubestock-prod-sg-rds"
+  name        = "kubestock-sg-rds"
   description = "Security group for RDS PostgreSQL - access from K8s nodes only"
   vpc_id      = aws_vpc.kubestock_vpc.id
 
@@ -233,13 +233,13 @@ resource "aws_security_group" "rds" {
   }
 
   tags = {
-    Name = "kubestock-prod-sg-rds"
+    Name = "kubestock-sg-rds"
   }
 }
 
 # NLB API Security Group
 resource "aws_security_group" "nlb_api" {
-  name        = "kubestock-prod-sg-nlb-api"
+  name        = "kubestock-sg-nlb-api"
   description = "Security group for NLB - K8s API access"
   vpc_id      = aws_vpc.kubestock_vpc.id
 
@@ -270,6 +270,6 @@ resource "aws_security_group" "nlb_api" {
   }
 
   tags = {
-    Name = "kubestock-prod-sg-nlb-api"
+    Name = "kubestock-sg-nlb-api"
   }
 }

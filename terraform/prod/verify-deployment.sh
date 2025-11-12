@@ -1,11 +1,11 @@
 #!/bin/bash
-# KubeStock Production - Deployment Verification Script
+# KubeStock Infrastructure - Deployment Verification Script
 # Run this after terraform apply completes
 
 set -e
 
 echo "=========================================="
-echo "KubeStock Production - Deployment Verification"
+echo "KubeStock Infrastructure - Deployment Verification"
 echo "=========================================="
 echo ""
 
@@ -78,7 +78,7 @@ BASTION_IP=$(terraform output -raw bastion_public_ip 2>/dev/null)
 
 if [ -n "$BASTION_IP" ]; then
     echo "Testing SSH to bastion ($BASTION_IP)..."
-    if timeout 5 ssh -i ~/.ssh/kubestock-prod-key -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$BASTION_IP "echo 'Connected'" > /dev/null 2>&1; then
+    if timeout 5 ssh -i ~/.ssh/kubestock-key -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$BASTION_IP "echo 'Connected'" > /dev/null 2>&1; then
         echo -e "${GREEN}✓${NC} Bastion SSH: Accessible"
     else
         echo -e "${YELLOW}⚠${NC} Bastion SSH: Cannot connect (may need to wait for instance to boot)"

@@ -1,15 +1,15 @@
-# KubeStock Production Infrastructure - Component Checklist
+# KubeStock Infrastructure - Component Checklist
 
 ## ✅ COMPLETED COMPONENTS
 
 ### 0. Backend Configuration
 - ✅ `backend.tf` with S3 backend configuration
-  - Bucket: `kubestock-terraform-state-prod` (placeholder)
-  - Key: `prod/terraform.tfstate`
+  - Bucket: `kubestock-terraform-state` (placeholder)
+  - Key: `terraform.tfstate`
   - Region: `us-east-1`
 
 ### 1. Networking (3-AZ HA)
-- ✅ 1 VPC (`kubestock-prod-vpc`)
+- ✅ 1 VPC (`kubestock-vpc`)
 - ✅ 3 Public Subnets (us-east-1a, us-east-1b, us-east-1c)
 - ✅ 3 Private Subnets (us-east-1a, us-east-1b, us-east-1c)
 - ✅ 1 Internet Gateway
@@ -18,7 +18,7 @@
 - ✅ 3 Private Route Tables (all route 0.0.0.0/0 to single NAT Gateway)
 
 ### 2. Compute & Access (Non-HA, Low-Cost)
-- ✅ 1 EC2 Key Pair (`kubestock-prod-key`)
+- ✅ 1 EC2 Key Pair (`kubestock-key`)
 - ✅ 1 Elastic IP (for Bastion host)
 - ✅ 1 EC2 Instance (Bastion): t3.micro in public subnet
 - ✅ 1 EC2 Instance (Control Plane): t3.medium in private subnet (us-east-1a)
@@ -47,12 +47,12 @@
   - Points to single Control Plane instance
 
 ### 5. IAM
-- ✅ 1 IAM Role (`kubestock-prod-node-role`)
+- ✅ 1 IAM Role (`kubestock-node-role`)
 - ✅ 1 IAM Policy with permissions for:
   - EC2 and AutoScaling (Cluster Autoscaler)
   - EBS (EBS CSI Driver)
   - ELB (AWS Load Balancer Controller)
-- ✅ 1 IAM Instance Profile (`kubestock-prod-node-profile`)
+- ✅ 1 IAM Instance Profile (`kubestock-node-profile`)
 
 ---
 
@@ -77,14 +77,14 @@
 
 ## 🎯 RESOURCE NAMING CONVENTION
 
-All resources follow the pattern: `kubestock-prod-<resource-type>`
+All resources follow the pattern: `kubestock-<resource-type>`
 
 Examples:
-- VPC: `kubestock-prod-vpc`
-- Subnets: `kubestock-prod-public-subnet-us-east-1a`
-- Security Groups: `kubestock-prod-sg-bastion`
-- Instances: `kubestock-prod-control-plane`
-- IAM Role: `kubestock-prod-node-role`
+- VPC: `kubestock-vpc`
+- Subnets: `kubestock-public-subnet-us-east-1a`
+- Security Groups: `kubestock-sg-bastion`
+- Instances: `kubestock-control-plane`
+- IAM Role: `kubestock-node-role`
 
 ---
 
@@ -92,12 +92,12 @@ Examples:
 
 All resources tagged with:
 - `Project = "KubeStock"`
-- `Environment = "prod"`
+- `Environment = "production"`
 - `ManagedBy = "Terraform"`
 
 Additional role-specific tags for K8s resources:
-- `kubernetes.io/cluster/kubestock-prod = "owned"`
-- `k8s.io/cluster-autoscaler/kubestock-prod = "owned"`
+- `kubernetes.io/cluster/kubestock = "owned"`
+- `k8s.io/cluster-autoscaler/kubestock = "owned"`
 - `k8s.io/cluster-autoscaler/enabled = "true"`
 
 ---
@@ -152,4 +152,4 @@ Additional role-specific tags for K8s resources:
 
 **Status**: ✅ ALL COMPONENTS COMPLETED  
 **Date**: 2025-11-13  
-**Project**: KubeStock Production Infrastructure
+**Project**: KubeStock Infrastructure

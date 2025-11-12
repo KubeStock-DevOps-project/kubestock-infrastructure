@@ -3,7 +3,7 @@
 # ========================================
 
 resource "aws_lb" "k8s_api" {
-  name               = "kubestock-prod-nlb-api"
+  name               = "kubestock-nlb-api"
   load_balancer_type = "network"
   internal           = false
   
@@ -17,7 +17,7 @@ resource "aws_lb" "k8s_api" {
   enable_cross_zone_load_balancing = true
 
   tags = {
-    Name = "kubestock-prod-nlb-api"
+    Name = "kubestock-nlb-api"
   }
 }
 
@@ -26,7 +26,7 @@ resource "aws_lb" "k8s_api" {
 # ========================================
 
 resource "aws_lb_target_group" "k8s_api" {
-  name        = "kubestock-prod-k8s-api-tg"
+  name        = "kubestock-k8s-api-tg"
   port        = 6443
   protocol    = "TCP"
   vpc_id      = aws_vpc.kubestock_vpc.id
@@ -45,7 +45,7 @@ resource "aws_lb_target_group" "k8s_api" {
   deregistration_delay = 30
 
   tags = {
-    Name = "kubestock-prod-k8s-api-tg"
+    Name = "kubestock-k8s-api-tg"
   }
 }
 
