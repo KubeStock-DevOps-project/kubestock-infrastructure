@@ -121,6 +121,18 @@ variable "bastion_instance_type" {
   default     = "t3.micro"
 }
 
+variable "dev_server_instance_type" {
+  description = "Instance type for development server (VS Code, Terraform, Ansible)"
+  type        = string
+  default     = "t3.large"
+}
+
+variable "dev_server_volume_size" {
+  description = "Root volume size for development server (GB)"
+  type        = number
+  default     = 30
+}
+
 variable "control_plane_instance_type" {
   description = "Instance type for Kubernetes control plane"
   type        = string

@@ -47,6 +47,34 @@ resource "aws_instance" "bastion" {
   }
 }
 
+# Development Server (Public Subnet in us-east-1a)
+# NOTE: For running VS Code Server, Terraform, Ansible, etc.
+# No Elastic IP - costs $0 when stopped (only storage costs)
+# Start/stop as needed for development work
+resource "aws_instance" "dev_server" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.dev_server_instance_type
+  subnet_id              = aws_subnet.public[0].id # First public subnet (us-east-1a)
+  vpc_security_group_ids = [aws_security_group.bastion.id]
+  key_name               = aws_key_pair.kubestock.key_name
+
+  # Auto-assign public IP (changes on each start, but free)
+  associate_public_ip_address = true
+
+  root_block_device {
+    volume_size = var.dev_server_volume_size
+    volume_type = "gp3"
+  }
+
+  tags = {
+    Name = "kubestock-dev-server"
+    Role = "development"
+  }
+
+  # This instance can be stopped when not in use to save costs
+  # When stopped, you only pay for EBS storage (~$1-2/month for 30GB)
+}
+
 # Control Plane Node (Private Subnet in us-east-1a)
 # NOTE: Single control plane for cost savings. For full HA, deploy 3 control planes across 3 AZs.
 resource "aws_instance" "control_plane" {

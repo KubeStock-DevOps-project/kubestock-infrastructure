@@ -23,6 +23,10 @@ This setup provides a production-grade network foundation that can easily scale 
 
 ### Compute (Non-HA)
 - **Bastion Host**: 1x t3.micro in public subnet (us-east-1a)
+- **Development Server**: 1x t3.medium in public subnet (us-east-1a)
+  - For running VS Code Server, Terraform, Ansible
+  - No Elastic IP (free public IP that changes on restart)
+  - Stop when not in use - costs $0 when stopped (only storage)
 - **Control Plane**: 1x t3.medium in private subnet (us-east-1a)
 - **Worker Nodes**: Auto Scaling Group (1 min, 1 desired, 3 max) spanning all 3 private subnets
   - Instance Type: t3.large
@@ -105,6 +109,41 @@ Type `yes` when prompted to confirm deployment.
 # SSH to bastion
 ssh -i ~/.ssh/kubestock-key ubuntu@<BASTION_PUBLIC_IP>
 ```
+
+### Access Development Server
+
+The development server is designed for running VS Code Server, Terraform, and Ansible. It uses a dynamic public IP (free) instead of an Elastic IP.
+
+```bash
+# Get current IP
+DEV_IP=$(terraform output -raw dev_server_public_ip)
+
+# SSH to dev server
+ssh -i ~/.ssh/kubestock-key ubuntu@$DEV_IP
+
+# Or use the output command directly
+terraform output dev_server_ssh_command
+```
+
+**Cost Optimization:**
+```bash
+# Stop the dev server when not in use (costs $0 when stopped)
+aws ec2 stop-instances --instance-ids $(terraform output -raw dev_server_instance_id)
+
+# Start when needed
+aws ec2 start-instances --instance-ids $(terraform output -raw dev_server_instance_id)
+
+# Get new IP after starting (IP changes on each start)
+aws ec2 describe-instances \
+  --instance-ids $(terraform output -raw dev_server_instance_id) \
+  --query 'Reservations[0].Instances[0].PublicIpAddress' \
+  --output text
+```
+
+**Monthly Costs:**
+- Running 24/7: ~$30/month (t3.medium)
+- Stopped: ~$1-2/month (30GB storage only)
+- **Recommended**: Stop when not in use, save ~$28/month
 
 ### Access Control Plane via Bastion
 

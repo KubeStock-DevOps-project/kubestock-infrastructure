@@ -65,6 +65,40 @@ output "bastion_ssh_command" {
 }
 
 # ========================================
+# DEVELOPMENT SERVER
+# ========================================
+
+output "dev_server_public_ip" {
+  description = "Current public IP address of the development server (changes on restart)"
+  value       = aws_instance.dev_server.public_ip
+}
+
+output "dev_server_ssh_command" {
+  description = "SSH command to connect to the development server"
+  value       = "ssh -i ~/.ssh/kubestock-key ubuntu@${aws_instance.dev_server.public_ip}"
+}
+
+output "dev_server_instance_id" {
+  description = "Instance ID of the development server (use to start/stop)"
+  value       = aws_instance.dev_server.id
+}
+
+output "dev_server_state" {
+  description = "Current state of the development server"
+  value       = aws_instance.dev_server.instance_state
+}
+
+output "dev_server_management" {
+  description = "Commands to manage the development server"
+  value = {
+    start = "aws ec2 start-instances --instance-ids ${aws_instance.dev_server.id}"
+    stop  = "aws ec2 stop-instances --instance-ids ${aws_instance.dev_server.id}"
+    status = "aws ec2 describe-instances --instance-ids ${aws_instance.dev_server.id} --query 'Reservations[0].Instances[0].State.Name' --output text"
+    get_ip = "aws ec2 describe-instances --instance-ids ${aws_instance.dev_server.id} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text"
+  }
+}
+
+# ========================================
 # CONTROL PLANE
 # ========================================
 

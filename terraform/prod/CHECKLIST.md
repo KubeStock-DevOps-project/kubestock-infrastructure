@@ -20,7 +20,10 @@
 ### 2. Compute & Access (Non-HA, Low-Cost)
 - ✅ 1 EC2 Key Pair (`kubestock-key`)
 - ✅ 1 Elastic IP (for Bastion host)
-- ✅ 1 EC2 Instance (Bastion): t3.micro in public subnet
+- ✅ 1 EC2 Instance (Bastion): t3.micro in public subnet - for SSH access and port forwarding
+- ✅ 1 EC2 Instance (Dev Server): t3.medium in public subnet - for VS Code, Terraform, Ansible
+  - No Elastic IP (uses free dynamic public IP)
+  - Stop when not in use - costs $0 when stopped
 - ✅ 1 EC2 Instance (Control Plane): t3.medium in private subnet (us-east-1a)
 - ✅ 1 EC2 Launch Template (Workers): t3.large configuration
 - ✅ 1 EC2 Auto Scaling Group (Workers):
@@ -124,9 +127,26 @@ Additional role-specific tags for K8s resources:
 
 ### Current Configuration (Cost-Optimized)
 - 1 NAT Gateway
+- 1 Bastion (t3.micro) - always running
+- 1 Dev Server (t3.medium) - **stop when not in use** 
 - 1 Control Plane (t3.medium)
 - 1 Worker (t3.large)
 - 1 Single-AZ RDS (db.t4g.medium)
+
+### Estimated Monthly Costs
+**If Dev Server Running 24/7**: ~$235/month
+- NAT Gateway: $32
+- Bastion: $7
+- Dev Server: $30 (running)
+- Control Plane: $30
+- Worker: $60
+- RDS: $50
+- NLB: $16
+- Other: $10
+
+**If Dev Server Stopped (Recommended)**: ~$206/month
+- Dev Server when stopped: ~$1-2 (storage only)
+- **Save ~$28/month** by stopping dev server when not in use
 
 ### Full HA Configuration
 - 3 NAT Gateways (+$64/month)
@@ -134,7 +154,8 @@ Additional role-specific tags for K8s resources:
 - 3 Workers (+$120/month)
 - 1 Multi-AZ RDS (+$40/month)
 
-**Estimated Monthly Savings**: ~$284/month
+**Full HA Monthly Cost**: ~$500/month
+**Current Savings**: ~$294/month
 
 ---
 
