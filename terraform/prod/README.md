@@ -73,7 +73,7 @@ nano terraform.tfvars
 **Required Variables:**
 - `my_ip`: Your public IP (get with `curl -4 ifconfig.me`)
 - `rds_password`: Strong password for RDS PostgreSQL
-- `ssh_public_key_path`: Path to your SSH public key
+- `ssh_public_key_content`: Content of your SSH public key (get with `cat ~/.ssh/kubestock-key.pub`)
 
 ### 2. Initialize Terraform
 

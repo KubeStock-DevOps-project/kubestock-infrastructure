@@ -71,10 +71,10 @@ variable "my_ip" {
   type        = string
 }
 
-variable "ssh_public_key_path" {
-  description = "Path to the SSH public key file"
+variable "ssh_public_key_content" {
+  description = "Content of the SSH public key (not the file path)"
   type        = string
-  default     = "~/.ssh/kubestock-key.pub"
+  sensitive   = true
 }
 
 # ========================================

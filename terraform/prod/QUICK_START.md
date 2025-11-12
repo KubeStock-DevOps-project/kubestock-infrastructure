@@ -80,9 +80,19 @@ nano terraform.tfvars
 
 **Minimum required values:**
 ```hcl
-my_ip                = "YOUR_IP_HERE/32"
-rds_password         = "YOUR_STRONG_PASSWORD_HERE"
-ssh_public_key_path  = "~/.ssh/kubestock-key.pub"
+my_ip                   = "YOUR_IP_HERE/32"
+rds_password            = "YOUR_STRONG_PASSWORD_HERE"
+ssh_public_key_content  = "ssh-rsa AAAAB3NzaC1yc2E... your-key-here"
+```
+
+**To get your SSH public key content:**
+```bash
+cat ~/.ssh/kubestock-key.pub
+```
+
+**Alternative (using file() function in terraform.tfvars):**
+```hcl
+ssh_public_key_content = file("~/.ssh/kubestock-key.pub")
 ```
 
 ---
@@ -137,6 +147,40 @@ terraform output bastion_public_ip
 terraform output k8s_api_endpoint
 terraform output rds_endpoint
 ```
+
+---
+
+## CI/CD Integration (GitHub Actions, GitLab CI, etc.)
+
+When using this infrastructure in CI/CD pipelines:
+
+1. **Create a Secret** for your SSH public key:
+   - GitHub Actions: Create a repository secret named `SSH_PUBLIC_KEY`
+   - GitLab CI: Create a CI/CD variable named `SSH_PUBLIC_KEY`
+   - Value: The entire content of your `~/.ssh/kubestock-key.pub` file
+
+2. **Pass it to Terraform:**
+   ```bash
+   # GitHub Actions example
+   terraform apply -auto-approve \
+     -var="my_ip=${{ secrets.MY_IP }}" \
+     -var="rds_password=${{ secrets.RDS_PASSWORD }}" \
+     -var="ssh_public_key_content=${{ secrets.SSH_PUBLIC_KEY }}"
+   ```
+
+3. **Or use environment variables:**
+   ```bash
+   export TF_VAR_ssh_public_key_content="$SSH_PUBLIC_KEY"
+   export TF_VAR_my_ip="$MY_IP"
+   export TF_VAR_rds_password="$RDS_PASSWORD"
+   terraform apply -auto-approve
+   ```
+
+**Benefits of this approach:**
+- ✅ No file path issues in CI/CD
+- ✅ Works in any environment
+- ✅ Secrets stay in secret management systems
+- ✅ No need to write files to disk
 
 ---
 

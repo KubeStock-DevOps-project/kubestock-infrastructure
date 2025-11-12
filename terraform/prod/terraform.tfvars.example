@@ -10,14 +10,16 @@
 aws_region = "us-east-1"
 
 # ========================================
-# Security
+# SECURITY
 # ========================================
 # Your public IP address for SSH and K8s API access
 # Get it by running: curl -4 ifconfig.me
 my_ip = "1.2.3.4/32"
 
-# Path to your SSH public key
-ssh_public_key_path = "~/.ssh/kubestock-key.pub"
+# SSH public key content (not the file path)
+# Get it by running: cat ~/.ssh/kubestock-key.pub
+# Or use file() function: ssh_public_key_content = file("~/.ssh/kubestock-key.pub")
+ssh_public_key_content = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... your-key-here"
 
 # ========================================
 # Database Credentials
