@@ -188,13 +188,26 @@ resource "aws_security_group" "k8s_nodes" {
     self        = true
   }
 
-  # K8s API from NLB
+  # K8s API from NLB (NLB traffic comes from VPC CIDR, not security group)
   ingress {
-    description     = "K8s API from NLB"
+    description = "K8s API from NLB in public subnets"
+    from_port   = 6443
+    to_port     = 6443
+    protocol    = "tcp"
+    cidr_blocks = [
+      "10.0.1.0/24",  # Public subnet us-east-1a
+      "10.0.2.0/24",  # Public subnet us-east-1b
+      "10.0.3.0/24"   # Public subnet us-east-1c
+    ]
+  }
+
+  # K8s API from bastion/dev-server (for dev server which has bastion SG)
+  ingress {
+    description     = "K8s API from bastion and dev server"
     from_port       = 6443
     to_port         = 6443
     protocol        = "tcp"
-    security_groups = [aws_security_group.nlb_api.id]
+    security_groups = [aws_security_group.bastion.id]
   }
 
   egress {

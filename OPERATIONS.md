@@ -260,7 +260,7 @@ kubectl version --client
 
 ### Step 2: Save the kubeconfig File
 
-Save the kubeconfig file provided by your admin:
+The admin will provide you with a kubeconfig file. Save it:
 
 ```bash
 # Create .kube directory
@@ -274,14 +274,20 @@ nano ~/.kube/kubestock-config
 chmod 600 ~/.kube/kubestock-config
 ```
 
-### Step 3: Update kubeconfig to Use Localhost
+**IMPORTANT**: The kubeconfig from the admin will have `server: https://10.0.10.21:6443` (direct control plane access for use within VPC). You need to change this to use the tunnel:
 
-Update the server address to use localhost (we'll tunnel to NLB):
+### Step 3: Update kubeconfig to Use Tunnel
+
+Update the server address to use localhost (you'll tunnel to NLB):
 
 ```bash
 export KUBECONFIG=~/.kube/kubestock-config
-kubectl config set-cluster kubestock --server=https://127.0.0.1:6443
+kubectl config set-cluster cluster.local --server=https://127.0.0.1:6443
 ```
+
+**Why this change?**
+- The dev server is inside the AWS VPC, so it connects directly to the control plane (10.0.10.21:6443)
+- Your local machine is outside AWS, so you tunnel through bastion to the NLB, then to localhost (127.0.0.1:6443)
 
 ### Step 4: Configure SSH and Aliases
 
@@ -300,6 +306,8 @@ Host kubestock
   LocalForward 6443 kubestock-nlb-api-b65eaa256bcf2be8.elb.us-east-1.amazonaws.com:6443
 EOF
 ```
+
+**Note**: Replace `~/.ssh/kubestock-dev` with the path to your private key file.
 
 Add this to your `~/.bashrc` or `~/.zshrc`:
 
@@ -415,8 +423,12 @@ Host ks-worker-2
   IdentityFile ~/.ssh/kubestock-dev
   ProxyJump kubestock
 EOF
+```
 
-# Usage:
+**Note**: Replace `~/.ssh/kubestock-dev` with the path to your private key file.
+
+Usage:
+```bash
 ssh ks-control
 ssh ks-worker-1
 ssh ks-worker-2
@@ -534,15 +546,11 @@ ssh kubestock "curl -k https://kubestock-nlb-api-b65eaa256bcf2be8.elb.us-east-1.
 
 ### Important Commands
 
-**From Dev Server (current setup):**
+**From Dev Server (inside VPC):**
 ```bash
-# Get nodes
+# Dev server connects directly to control plane (no tunnel needed)
 KUBECONFIG=~/kubeconfig kubectl get nodes
-
-# Get all pods
 KUBECONFIG=~/kubeconfig kubectl get pods -A
-
-# Get storage classes
 KUBECONFIG=~/kubeconfig kubectl get sc
 
 # Access ArgoCD
@@ -551,19 +559,35 @@ KUBECONFIG=~/kubeconfig kubectl port-forward -n argocd svc/argocd-server 8080:44
 # Username: admin, Password: g4npBgErM8L01960
 ```
 
+**From Your Local Machine (outside VPC):**
+```bash
+# Start tunnel first
+ks-start
+
+# Then use kubectl
+kubectl get nodes
+kubectl get pods -A
+
+# When done, stop tunnel
+ks-stop
+```
+
 **SSH Commands:**
 ```bash
-# SSH to bastion
+# SSH to bastion (admin using original key)
 ssh -i ~/.ssh/kubestock-key ubuntu@100.30.61.159
 
-# SSH to control plane (via bastion)
+# SSH to control plane (via bastion) - admin
 ssh -i ~/.ssh/kubestock-key -J ubuntu@100.30.61.159 ubuntu@10.0.10.21
 
-# SSH to worker-1 (via bastion)
+# SSH to worker-1 (via bastion) - admin
 ssh -i ~/.ssh/kubestock-key -J ubuntu@100.30.61.159 ubuntu@10.0.11.30
 
-# SSH to worker-2 (via bastion)
+# SSH to worker-2 (via bastion) - admin
 ssh -i ~/.ssh/kubestock-key -J ubuntu@100.30.61.159 ubuntu@10.0.12.30
+
+# For developers with their own keys, use their configured aliases:
+# ssh ks-control, ssh ks-worker-1, ssh ks-worker-2
 ```
 
 ### Terraform Outputs
