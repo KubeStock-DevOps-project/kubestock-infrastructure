@@ -303,7 +303,7 @@ Host kubestock
   IdentityFile ~/.ssh/kubestock-dev
   ServerAliveInterval 60
   ServerAliveCountMax 3
-  LocalForward 6443 kubestock-nlb-api-b65eaa256bcf2be8.elb.us-east-1.amazonaws.com:6443
+  LocalForward 6443 10.0.10.21:6443
 EOF
 ```
 
