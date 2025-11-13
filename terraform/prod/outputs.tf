@@ -136,25 +136,6 @@ output "worker_ssh_commands" {
   value       = [for ip in aws_instance.worker[*].private_ip : "ssh -i ~/.ssh/kubestock-key -J ubuntu@${aws_eip.bastion.public_ip} ubuntu@${ip}"]
 }
 
-output "worker_asg_name" {
-  description = "Name of the worker nodes Auto Scaling Group (disabled, using static workers)"
-  value       = aws_autoscaling_group.workers.name
-}
-
-output "worker_launch_template_id" {
-  description = "ID of the worker launch template"
-  value       = aws_launch_template.worker.id
-}
-
-output "worker_asg_capacity" {
-  description = "Worker ASG capacity settings"
-  value = {
-    min     = aws_autoscaling_group.workers.min_size
-    desired = aws_autoscaling_group.workers.desired_capacity
-    max     = aws_autoscaling_group.workers.max_size
-  }
-}
-
 # ========================================
 # KUBERNETES API (NLB)
 # ========================================
@@ -291,7 +272,7 @@ output "cluster_info" {
     name                  = "kubestock"
     environment           = var.environment
     network_architecture  = "3-AZ HA (3 public + 3 private subnets)"
-    compute_architecture  = "Non-HA (1 control plane, 1 worker ASG spanning 3 AZs)"
+    compute_architecture  = "Non-HA (1 control plane, 2 static workers across 2 AZs)"
     database_architecture = "Single-AZ RDS (cost-optimized)"
     nat_gateway_count     = 1
   }

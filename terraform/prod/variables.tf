@@ -142,23 +142,11 @@ variable "control_plane_instance_type" {
 variable "worker_instance_type" {
   description = "Instance type for Kubernetes worker nodes"
   type        = string
-  default     = "t3.large"
+  default     = "t3.medium"
 }
 
-variable "worker_asg_min_size" {
-  description = "Minimum number of worker nodes in Auto Scaling Group"
+variable "worker_volume_size" {
+  description = "Root volume size for worker nodes (GB)"
   type        = number
-  default     = 1
-}
-
-variable "worker_asg_desired_capacity" {
-  description = "Desired number of worker nodes in Auto Scaling Group"
-  type        = number
-  default     = 1
-}
-
-variable "worker_asg_max_size" {
-  description = "Maximum number of worker nodes in Auto Scaling Group"
-  type        = number
-  default     = 3
+  default     = 25
 }

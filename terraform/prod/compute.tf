@@ -99,12 +99,16 @@ resource "aws_instance" "control_plane" {
   }
 }
 
-# Static Worker Nodes (for Ansible management)
-# Worker 1 in us-east-1b
+# ========================================
+# STATIC WORKER NODES
+# ========================================
+# Static worker nodes managed via Ansible/Kubespray
+# Deployed across 2 AZs (us-east-1b, us-east-1c) for availability
+
 resource "aws_instance" "worker" {
   count                  = 2
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t3.medium"
+  instance_type          = var.worker_instance_type
   subnet_id              = aws_subnet.private[count.index % 2 == 0 ? 1 : 2].id # Alternate between us-east-1b and us-east-1c
   vpc_security_group_ids = [aws_security_group.k8s_nodes.id]
   key_name               = aws_key_pair.kubestock.key_name
@@ -114,130 +118,14 @@ resource "aws_instance" "worker" {
   private_ip = count.index == 0 ? "10.0.11.30" : "10.0.12.30"
 
   root_block_device {
-    volume_size = 25
+    volume_size = var.worker_volume_size
     volume_type = "gp3"
   }
 
   tags = {
-    Name                                   = "kubestock-worker-${count.index + 1}"
-    Role                                   = "worker"
-    "kubernetes.io/cluster/kubestock"      = "owned"
-    "k8s.io/cluster-autoscaler/kubestock"  = "owned"
-    "k8s.io/cluster-autoscaler/enabled"    = "true"
-  }
-}
-
-# ========================================
-# WORKER NODES - LAUNCH TEMPLATE
-# ========================================
-
-resource "aws_launch_template" "worker" {
-  name_prefix   = "kubestock-worker-"
-  image_id      = data.aws_ami.ubuntu.id
-  instance_type = var.worker_instance_type
-  key_name      = aws_key_pair.kubestock.key_name
-
-  iam_instance_profile {
-    name = aws_iam_instance_profile.k8s_nodes.name
-  }
-
-  network_interfaces {
-    associate_public_ip_address = false
-    security_groups             = [aws_security_group.k8s_nodes.id]
-    delete_on_termination       = true
-  }
-
-  block_device_mappings {
-    device_name = "/dev/sda1"
-    ebs {
-      volume_size = 50
-      volume_type = "gp3"
-      encrypted   = true
-    }
-  }
-
-  tag_specifications {
-    resource_type = "instance"
-    tags = {
-      Name                                        = "kubestock-worker"
-      Role                                        = "worker"
-      "kubernetes.io/cluster/kubestock"      = "owned"
-      "k8s.io/cluster-autoscaler/kubestock"  = "owned"
-      "k8s.io/cluster-autoscaler/enabled"         = "true"
-    }
-  }
-
-  tag_specifications {
-    resource_type = "volume"
-    tags = {
-      Name = "kubestock-worker-volume"
-    }
-  }
-
-  user_data = filebase64("${path.module}/worker_user_data.sh")
-
-  tags = {
-    Name = "kubestock-worker-launch-template"
-  }
-}
-
-# ========================================
-# WORKER NODES - AUTO SCALING GROUP
-# ========================================
-# CRITICAL: ASG spans all 3 private subnets (3 AZs) for future HA.
-# However, we start with min=1, desired=1 for cost savings.
-
-resource "aws_autoscaling_group" "workers" {
-  name = "kubestock-workers-asg"
-  
-  # CRITICAL: Use all 3 private subnets across 3 AZs
-  vpc_zone_identifier = [
-    aws_subnet.private[0].id,
-    aws_subnet.private[1].id,
-    aws_subnet.private[2].id
-  ]
-  
-  # Cost-saving settings: Start with 1 worker
-  min_size         = var.worker_asg_min_size
-  max_size         = var.worker_asg_max_size
-  desired_capacity = var.worker_asg_desired_capacity
-
-  launch_template {
-    id      = aws_launch_template.worker.id
-    version = "$Latest"
-  }
-
-  health_check_type         = "EC2"
-  health_check_grace_period = 300
-
-  tag {
-    key                 = "Name"
-    value               = "kubestock-worker"
-    propagate_at_launch = true
-  }
-
-  tag {
-    key                 = "Role"
-    value               = "worker"
-    propagate_at_launch = true
-  }
-
-  tag {
-    key                 = "kubernetes.io/cluster/kubestock"
-    value               = "owned"
-    propagate_at_launch = true
-  }
-
-  tag {
-    key                 = "k8s.io/cluster-autoscaler/kubestock"
-    value               = "owned"
-    propagate_at_launch = true
-  }
-
-  tag {
-    key                 = "k8s.io/cluster-autoscaler/enabled"
-    value               = "true"
-    propagate_at_launch = true
+    Name                              = "kubestock-worker-${count.index + 1}"
+    Role                              = "worker"
+    "kubernetes.io/cluster/kubestock" = "owned"
   }
 }
 
