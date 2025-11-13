@@ -99,6 +99,34 @@ resource "aws_instance" "control_plane" {
   }
 }
 
+# Static Worker Nodes (for Ansible management)
+# Worker 1 in us-east-1b
+resource "aws_instance" "worker" {
+  count                  = 2
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t3.medium"
+  subnet_id              = aws_subnet.private[count.index % 2 == 0 ? 1 : 2].id # Alternate between us-east-1b and us-east-1c
+  vpc_security_group_ids = [aws_security_group.k8s_nodes.id]
+  key_name               = aws_key_pair.kubestock.key_name
+  iam_instance_profile   = aws_iam_instance_profile.k8s_nodes.name
+  
+  # Fixed private IPs for Ansible inventory
+  private_ip = count.index == 0 ? "10.0.11.30" : "10.0.12.30"
+
+  root_block_device {
+    volume_size = 25
+    volume_type = "gp3"
+  }
+
+  tags = {
+    Name                                   = "kubestock-worker-${count.index + 1}"
+    Role                                   = "worker"
+    "kubernetes.io/cluster/kubestock"      = "owned"
+    "k8s.io/cluster-autoscaler/kubestock"  = "owned"
+    "k8s.io/cluster-autoscaler/enabled"    = "true"
+  }
+}
+
 # ========================================
 # WORKER NODES - LAUNCH TEMPLATE
 # ========================================
@@ -145,6 +173,8 @@ resource "aws_launch_template" "worker" {
       Name = "kubestock-worker-volume"
     }
   }
+
+  user_data = filebase64("${path.module}/worker_user_data.sh")
 
   tags = {
     Name = "kubestock-worker-launch-template"

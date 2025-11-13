@@ -121,8 +121,23 @@ output "control_plane_ssh_via_bastion" {
 # WORKER NODES
 # ========================================
 
+output "worker_private_ips" {
+  description = "Private IP addresses of static worker nodes"
+  value       = aws_instance.worker[*].private_ip
+}
+
+output "worker_instance_ids" {
+  description = "Instance IDs of static worker nodes"
+  value       = aws_instance.worker[*].id
+}
+
+output "worker_ssh_commands" {
+  description = "SSH commands to connect to worker nodes via bastion"
+  value       = [for ip in aws_instance.worker[*].private_ip : "ssh -i ~/.ssh/kubestock-key -J ubuntu@${aws_eip.bastion.public_ip} ubuntu@${ip}"]
+}
+
 output "worker_asg_name" {
-  description = "Name of the worker nodes Auto Scaling Group"
+  description = "Name of the worker nodes Auto Scaling Group (disabled, using static workers)"
   value       = aws_autoscaling_group.workers.name
 }
 
