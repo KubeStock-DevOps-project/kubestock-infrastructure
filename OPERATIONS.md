@@ -152,75 +152,345 @@ terraform apply
 
 ---
 
-## Configuring Bastion for kubectl
+## Managing Developer Access
 
-The bastion host can be configured to run kubectl commands directly instead of always SSHing to the dev server.
+### Adding a New Developer
 
-### 1. SSH to Bastion
+Each developer should have their own SSH key pair for security and audit purposes. **Never share private keys between team members.**
+
+#### Step 1: Developer Generates SSH Key
+
+The developer generates their own SSH key pair:
 
 ```bash
+# On developer's local machine
+ssh-keygen -t ed25519 -C "developer.name@kubestock.com" -f ~/.ssh/kubestock-dev
+
+# This creates:
+# ~/.ssh/kubestock-dev (private key - keep this secret!)
+# ~/.ssh/kubestock-dev.pub (public key - share this with admin)
+```
+
+Developer sends their **public key** (`~/.ssh/kubestock-dev.pub`) to the admin.
+
+#### Step 2: Admin Adds Developer's Public Key to Bastion
+
+Admin logs into bastion and adds the developer's public key:
+
+```bash
+# SSH to bastion as admin
 ssh -i ~/.ssh/kubestock-key ubuntu@100.30.61.159
+
+# Add developer's public key to authorized_keys
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... developer.name@kubestock.com" >> ~/.ssh/authorized_keys
+
+# Verify permissions
+chmod 600 ~/.ssh/authorized_keys
 ```
 
-### 2. Install kubectl
+#### Step 3: Developer Tests Access
+
+Developer tests SSH access to bastion:
 
 ```bash
-# Add Kubernetes repository
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | \
-  sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+# Test SSH connection
+ssh -i ~/.ssh/kubestock-dev ubuntu@100.30.61.159
 
-echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /" | \
-  sudo tee /etc/apt/sources.list.d/kubernetes.list
-
-sudo apt-get update
-sudo apt-get install -y kubectl=1.34.1-1.1
-sudo apt-mark hold kubectl
+# If successful, exit
+exit
 ```
 
-### 3. Copy kubeconfig from Control Plane
+#### Step 4: Admin Provides Developer with kubeconfig
+
+Admin copies kubeconfig and shares securely with the developer:
+
+```bash
+# On dev server, copy kubeconfig
+cat ~/kubeconfig
+
+# Share this file securely with developer (encrypted email, password manager, etc.)
+# DO NOT commit kubeconfig to git or send via plain text
+```
+
+### Removing a Developer
+
+When a developer leaves the team:
+
+```bash
+# SSH to bastion
+ssh -i ~/.ssh/kubestock-key ubuntu@100.30.61.159
+
+# Edit authorized_keys and remove their public key line
+nano ~/.ssh/authorized_keys
+
+# Save and exit
+```
+
+---
+
+## Configuring kubectl Access for Developers
+
+Developers use their local machines to access the cluster through the bastion as a secure tunnel/jump host.
+
+### Prerequisites
+- Your own SSH key pair generated and added to bastion (see above)
+- kubectl installed on your local machine
+- kubeconfig file provided by admin
+
+### Step 1: Install kubectl on Your Local Machine
+
+**macOS:**
+```bash
+brew install kubectl
+```
+
+**Linux:**
+```bash
+curl -LO "https://dl.k8s.io/release/v1.34.1/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+```
+
+**Windows:** Download from [Kubernetes releases](https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/)
+
+Verify:
+```bash
+kubectl version --client
+```
+
+### Step 2: Save the kubeconfig File
+
+Save the kubeconfig file provided by your admin:
 
 ```bash
 # Create .kube directory
 mkdir -p ~/.kube
 
-# Copy kubeconfig from control plane
-scp ubuntu@10.0.10.21:~/.kube/config ~/.kube/config
+# Save the kubeconfig content to this file
+nano ~/.kube/kubestock-config
+# Paste the kubeconfig content, save and exit
 
-# Verify
-kubectl get nodes
+# Set proper permissions
+chmod 600 ~/.kube/kubestock-config
 ```
 
-### 4. Set Up SSH Tunnel for API Server (Alternative Method)
+### Step 3: Update kubeconfig to Use Localhost
 
-If NLB health checks are failing, use SSH tunnel:
+Update the server address to use localhost (we'll tunnel to NLB):
 
 ```bash
-# On bastion, create persistent SSH tunnel
-ssh -i ~/.ssh/kubestock-key -L 6443:127.0.0.1:6443 ubuntu@10.0.10.21 -N -f
-
-# Update kubeconfig to use localhost
-sed -i 's|server:.*|server: https://127.0.0.1:6443|g' ~/.kube/config
-
-# Test
-kubectl get nodes
+export KUBECONFIG=~/.kube/kubestock-config
+kubectl config set-cluster kubestock --server=https://127.0.0.1:6443
 ```
 
-### 5. Install Useful Tools on Bastion (Optional)
+### Step 4: Configure SSH and Aliases
+
+Add this to your `~/.ssh/config`:
 
 ```bash
-# Install kubectx/kubens for context switching
-sudo git clone https://github.com/ahmetb/kubectx /opt/kubectx
-sudo ln -s /opt/kubectx/kubectx /usr/local/bin/kubectx
-sudo ln -s /opt/kubectx/kubens /usr/local/bin/kubens
+cat >> ~/.ssh/config << 'EOF'
 
-# Install k9s (terminal UI for Kubernetes)
-VERSION=$(curl -s https://api.github.com/repos/derailed/k9s/releases/latest | grep -Po '"tag_name": "v\K[^"]*')
-curl -sL https://github.com/derailed/k9s/releases/download/v${VERSION}/k9s_Linux_amd64.tar.gz | \
-  sudo tar xz -C /usr/local/bin k9s
+# KubeStock Bastion
+Host kubestock
+  HostName 100.30.61.159
+  User ubuntu
+  IdentityFile ~/.ssh/kubestock-dev
+  ServerAliveInterval 60
+  ServerAliveCountMax 3
+  LocalForward 6443 kubestock-nlb-api-b65eaa256bcf2be8.elb.us-east-1.amazonaws.com:6443
+EOF
+```
 
-# Install helm
+Add this to your `~/.bashrc` or `~/.zshrc`:
+
+```bash
+cat >> ~/.bashrc << 'EOF'
+
+# KubeStock Cluster
+export KUBECONFIG=~/.kube/kubestock-config
+alias ks-start='ssh -f -N kubestock && echo "Tunnel started"'
+alias ks-stop='pkill -f "ssh.*kubestock" && echo "Tunnel stopped"'
+alias ks-status='ps aux | grep "ssh.*kubestock" | grep -v grep && echo "Tunnel is running" || echo "Tunnel is not running"'
+alias k='kubectl'
+alias kgn='kubectl get nodes'
+alias kgp='kubectl get pods'
+alias kgpa='kubectl get pods -A'
+EOF
+
+source ~/.bashrc
+```
+
+### Step 5: Start Using kubectl
+
+```bash
+# Start the tunnel
+ks-start
+
+# Use kubectl
+kubectl get nodes
+kubectl get pods -A
+k top nodes  # Using the 'k' alias
+
+# When done, stop the tunnel
+ks-stop
+```
+
+### Testing Your Setup
+
+After configuration, verify everything works:
+
+```bash
+# Check tunnel status
+ks-status
+
+# Start tunnel if not running
+ks-start
+
+# Test kubectl commands
+kubectl get nodes
+kubectl get pods -A
+kubectl top nodes
+kubectl cluster-info
+
+# Stop tunnel when done
+ks-stop
+```
+
+### Common kubectl Commands
+
+```bash
+# View cluster status
+kubectl get nodes
+kubectl get pods -A
+
+# Check specific namespace
+kubectl get pods -n kube-system
+
+# View logs
+kubectl logs -n <namespace> <pod-name>
+kubectl logs -n <namespace> <pod-name> -f  # Follow logs
+
+# Execute commands in pods
+kubectl exec -it -n <namespace> <pod-name> -- /bin/bash
+
+# Port forwarding (for ArgoCD)
+kubectl port-forward -n argocd svc/argocd-server 8080:443
+# Then visit: https://localhost:8080
+# Username: admin, Password: g4npBgErM8L01960
+
+# Resource usage
+kubectl top nodes
+kubectl top pods -A
+
+# Apply/delete manifests
+kubectl apply -f manifest.yaml
+kubectl delete -f manifest.yaml
+```
+
+### SSH Access to Cluster Nodes
+
+To SSH into cluster nodes (for troubleshooting):
+
+```bash
+# Add to your ~/.ssh/config
+cat >> ~/.ssh/config << 'EOF'
+
+# KubeStock Control Plane
+Host ks-control
+  HostName 10.0.10.21
+  User ubuntu
+  IdentityFile ~/.ssh/kubestock-dev
+  ProxyJump kubestock
+
+# KubeStock Workers
+Host ks-worker-1
+  HostName 10.0.11.30
+  User ubuntu
+  IdentityFile ~/.ssh/kubestock-dev
+  ProxyJump kubestock
+
+Host ks-worker-2
+  HostName 10.0.12.30
+  User ubuntu
+  IdentityFile ~/.ssh/kubestock-dev
+  ProxyJump kubestock
+EOF
+
+# Usage:
+ssh ks-control
+ssh ks-worker-1
+ssh ks-worker-2
+```
+
+### Optional: Install Additional Tools
+
+**k9s** - Terminal UI for Kubernetes (recommended):
+```bash
+# macOS
+brew install derailed/k9s/k9s
+
+# Linux
+curl -sL https://github.com/derailed/k9s/releases/latest/download/k9s_Linux_amd64.tar.gz | \
+  tar xz -C /tmp && sudo mv /tmp/k9s /usr/local/bin/
+
+# Usage (with tunnel running)
+k9s
+```
+
+**Helm** - Package manager:
+```bash
+# macOS
+brew install helm
+
+# Linux
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 ```
+
+### Security Best Practices
+
+1. **Each developer has their own SSH key** - never share private keys
+2. **Always use tunnel through bastion** - never expose control plane directly
+3. **Connect via NLB** - prepares for future HA control plane setup
+4. **Stop tunnel when done** - use `ks-stop` to close connections
+5. **Keep kubeconfig secure** - chmod 600, never commit to git
+6. **Limit bastion access** - configure security group for your team's IPs only
+
+### Troubleshooting
+
+**Tunnel not working:**
+```bash
+# Check status
+ks-status
+
+# Restart tunnel
+ks-stop
+ks-start
+
+# Test bastion connection
+ssh kubestock echo "Connected!"
+```
+
+**kubectl connection refused:**
+```bash
+# Verify tunnel is running
+ks-status
+
+# Verify kubeconfig
+kubectl config view | grep server
+# Should show: https://127.0.0.1:6443
+
+# Test NLB from bastion
+ssh kubestock "curl -k https://kubestock-nlb-api-b65eaa256bcf2be8.elb.us-east-1.amazonaws.com:6443/healthz"
+# Should return: ok
+```
+
+**Permission denied (publickey):**
+```bash
+# Verify your SSH key is added to bastion
+# Contact admin to add your public key to bastion's ~/.ssh/authorized_keys
+```
+
+---
 
 ---
 
