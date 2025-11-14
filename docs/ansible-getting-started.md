@@ -59,7 +59,19 @@ container_manager: containerd
 kube_proxy_mode: iptables
 ```
 
-## 4. Run the main Kubespray playbook
+## 4. Test Ansible connectivity
+
+Before running long playbooks, make sure Ansible can reach every host:
+
+```bash
+cd ~/kubestock-infrastructure/kubespray
+source venv/bin/activate
+ansible all -i inventory/kubestock/hosts.ini -m ping -b
+```
+
+You should see `SUCCESS` responses from `master-1`, `worker-1`, and `worker-2`. Investigate SSH or inventory issues if any host fails.
+
+## 5. Run the main Kubespray playbook
 
 ```bash
 cd ~/kubestock-infrastructure/kubespray
@@ -70,7 +82,7 @@ ansible-playbook -i inventory/kubestock/hosts.ini --become --become-user=root cl
 - Use `tmux`/`screen` to avoid losing progress.
 - Expect 30–60 minutes for a full install.
 
-## 5. Fetch kubeconfig and test
+## 6. Fetch kubeconfig and test
 
 ```bash
 CONFIG_FILE=inventory/kubestock/hosts.ini
@@ -81,7 +93,7 @@ kubectl get nodes -o wide
 
 You should see `master-1`, `worker-1`, and `worker-2` in `Ready` state.
 
-## 6. Day-2 add-ons (optional)
+## 7. Day-2 add-ons (optional)
 
 ```bash
 kubectl apply -k "https://github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
