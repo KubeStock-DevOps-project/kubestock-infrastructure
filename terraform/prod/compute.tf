@@ -114,6 +114,7 @@ resource "aws_instance" "control_plane" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.control_plane_instance_type
   subnet_id     = aws_subnet.private[0].id # First private subnet (us-east-1a)
+  private_ip    = var.control_plane_private_ip
   vpc_security_group_ids = [
     aws_security_group.control_plane.id,
     aws_security_group.k8s_common.id
@@ -142,7 +143,7 @@ resource "aws_instance" "control_plane" {
 # Deployed across 2 AZs (us-east-1b, us-east-1c) for availability
 
 resource "aws_instance" "worker" {
-  count         = 2
+  count         = length(var.worker_private_ips)
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.worker_instance_type
   subnet_id     = aws_subnet.private[count.index % 2 == 0 ? 1 : 2].id # Alternate between us-east-1b and us-east-1c
@@ -154,7 +155,7 @@ resource "aws_instance" "worker" {
   iam_instance_profile = aws_iam_instance_profile.k8s_nodes.name
 
   # Fixed private IPs for Ansible inventory
-  private_ip = count.index == 0 ? "10.0.11.30" : "10.0.12.30"
+  private_ip = var.worker_private_ips[count.index]
 
   root_block_device {
     volume_size = var.worker_volume_size

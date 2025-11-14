@@ -54,17 +54,16 @@ You should see valid output for each.
 # 1. Get the IP of your Control Plane node
 MASTER_IP=$(terraform output -raw control_plane_private_ip)
 
-# 2. Get the IP of your Worker node (from the ASG)
-ASG_NAME=$(terraform output -raw worker_asg_name)
-WORKER_IP=$(aws ec2 describe-instances \
-  --filters "Name=tag:aws:autoscaling:groupName,Values=${ASG_NAME}" "Name=instance-state-name,Values=running" \
-  --query "Reservations[0].Instances[0].PrivateIpAddress" --output text)
+# 2. Collect the static worker IPs (Terraform output returns a JSON list)
+readarray -t WORKER_IPS <<< "$(terraform output -json worker_private_ips | jq -r '.[]')"
+WORKER1_IP=${WORKER_IPS[0]}
+WORKER2_IP=${WORKER_IPS[1]}
 
 # 3. Get the DNS name of your K8s API Load Balancer
 NLB_DNS=$(terraform output -raw nlb_dns_name)
 
 # 4. Path to your private SSH key
-PRIVATE_KEY="~/.ssh/kubestock-key.pem"
+PRIVATE_KEY="~/.ssh/kubestock-key"
 ```
 
 ### 🧾 Create Inventory Configuration
@@ -77,7 +76,8 @@ cp -rfp ./kubespray/inventory/sample/* ./kubespray/inventory/kubestock/
 cat > ${CONFIG_FILE} <<-EOF
 [all]
 master-1 ansible_host=${MASTER_IP} ansible_user=ubuntu etcd_member_name=etcd-1
-worker-1 ansible_host=${WORKER_IP} ansible_user=ubuntu
+worker-1 ansible_host=${WORKER1_IP} ansible_user=ubuntu
+worker-2 ansible_host=${WORKER2_IP} ansible_user=ubuntu
 
 [kube_control_plane]
 master-1
@@ -87,6 +87,7 @@ master-1
 
 [kube_node]
 worker-1
+worker-2
 
 [k8s_cluster:children]
 kube_control_plane
@@ -174,6 +175,7 @@ kubectl get nodes
 ```
 master-1   Ready
 worker-1   Ready
+worker-2   Ready
 ```
 
 ---
@@ -215,57 +217,7 @@ You should see:
 
 ---
 
-## ⚡ Phase 6: Finalize Auto Scaling (Terraform Update)
-
-**Status:** ⏳ **PENDING**
-**Goal:** Update the **AWS Launch Template** with the `kubeadm join` command so the ASG can launch working nodes.
-**Directory:** `./prod`
-
-### 🧰 Commands
-
-```bash
-CONFIG_FILE="../kubespray/inventory/kubestock/hosts.ini"
-JOIN_CMD=$(ansible master-1 -i ${CONFIG_FILE} -b -m shell -a "kubeadm token create --print-join-command" | grep "kubeadm join")
-
-USER_DATA_FILE="worker_user_data.sh"
-cat > ${USER_DATA_FILE} <<-EOF
-#!/bin/bash
-apt-get update
-apt-get install -y kubelet kubeadm containerd
-# ... other pre-install tasks from Kubespray may be needed ...
-${JOIN_CMD}
-EOF
-```
-
-Then manually **edit** `./prod/compute.tf`:
-
-```hcl
-user_data = filebase64("${path.module}/worker_user_data.sh")
-```
-
-Apply the change:
-
-```bash
-cd ./prod
-terraform apply -auto-approve
-```
-
-### ✅ Verification
-
-Terraform output shows modification of the launch template.
-
-#### 🧪 Final Test (Optional)
-
-```bash
-aws autoscaling set-desired-capacity --auto-scaling-group-name ${ASG_NAME} --desired-capacity 2
-kubectl get nodes
-```
-
-A new `worker-2` node should appear and become **Ready**.
-
----
-
-## 🤝 Phase 7: Handoff to Team
+##  Phase 6: Handoff to Team
 
 **Status:** ⏳ **PENDING**
 **Goal:** Provide final credentials to Platform and App Dev teams.

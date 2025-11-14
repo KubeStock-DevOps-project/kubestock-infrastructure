@@ -150,3 +150,15 @@ variable "worker_volume_size" {
   type        = number
   default     = 25
 }
+
+variable "control_plane_private_ip" {
+  description = "Static private IP address for the Kubernetes control plane (must be within the first private subnet)"
+  type        = string
+  default     = "10.0.10.21"
+}
+
+variable "worker_private_ips" {
+  description = "Static private IP addresses for each worker node (must align with worker count and target subnets)"
+  type        = list(string)
+  default     = ["10.0.11.30", "10.0.12.30"]
+}

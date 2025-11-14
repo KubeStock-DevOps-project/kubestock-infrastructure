@@ -42,7 +42,7 @@ resource "aws_db_instance" "kubestock" {
   skip_final_snapshot     = true
   backup_retention_period = 0
   deletion_protection     = false
-  apply_immediately = true
+  apply_immediately       = true
 
   # === PRODUCTION SETTINGS (COMMENTED OUT) ===
   # publicly_accessible       = false
