@@ -163,6 +163,8 @@ resource "aws_instance" "worker" {
     volume_type = "gp3"
   }
 
+  user_data = filebase64("${path.module}/worker_user_data.sh")
+
   tags = {
     Name                              = "kubestock-worker-${count.index + 1}"
     Role                              = "worker"

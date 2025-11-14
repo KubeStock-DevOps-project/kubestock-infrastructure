@@ -32,6 +32,8 @@ NLB_DNS=$(terraform output -raw nlb_dns_name)
 
 Update the Kubespray inventory if needed (`kubespray/inventory/kubestock/hosts.ini`). Static workers live at the IPs from `worker_private_ips`; add/remove entries to match that list.
 
+> Terraform automatically applies `terraform/prod/worker_user_data.sh` to each worker instance so that Python 3 and its tooling are preinstalled for Ansible. No manual prep is required on the nodes before running Kubespray.
+
 ### Group variables
 
 `kubespray/inventory/kubestock/group_vars/all/all.yml` should contain:
@@ -42,6 +44,7 @@ ansible_user: ubuntu
 ansible_become: true
 ansible_private_key_file: ~/.ssh/kubestock-key
 ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+ansible_python_interpreter: /usr/bin/python3
 ```
 
 `kubespray/inventory/kubestock/group_vars/k8s_cluster/k8s-cluster.yml` should include:
