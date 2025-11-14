@@ -36,10 +36,10 @@ Share the file via a secure channel (never commit to git). Developers should sav
 - Linux: download from https://kubernetes.io/docs/tasks/tools/
 - Windows: follow the same link.
 
-### 2.2 Update kubeconfig to use the tunnel endpoint
+### 2.2 Update kubeconfig to use the tunnel endpoint (via NLB)
 ```bash
 export KUBECONFIG=~/.kube/kubestock-config
-kubectl config set-cluster cluster.local --server=https://127.0.0.1:6443
+kubectl config set-cluster kubestock --server=https://127.0.0.1:6443
 ```
 
 ### 2.3 SSH config & aliases (`~/.ssh/config`)
@@ -50,7 +50,8 @@ Host kubestock
   IdentityFile ~/.ssh/kubestock-dev
   ServerAliveInterval 60
   ServerAliveCountMax 3
-  LocalForward 6443 10.0.10.21:6443
+  # Forward local 6443 to the NLB (not directly to the control-plane)
+  LocalForward 6443 kubestock-nlb-api-773436c2b62a3c5f.elb.us-east-1.amazonaws.com:6443
 
 Host ks-control
   HostName 10.0.10.21
@@ -113,7 +114,7 @@ ks-stop
 
 ## 6. Security best practices
 1. Each developer must have a unique SSH keypair.
-2. Always use the bastion tunnel—never expose the control plane directly.
+2. Always use the bastion tunnel (or a locked-down egress host)—never expose the control plane directly; route kubectl to the NLB.
 3. Keep kubeconfigs private (`chmod 600`, no git commits).
 4. Stop tunnels when not actively using the cluster.
 5. Restrict bastion security groups to known office/VPN IPs.

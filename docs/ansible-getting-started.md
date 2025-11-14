@@ -90,8 +90,13 @@ ansible-playbook -i inventory/kubestock/hosts.ini --become --become-user=root cl
 ```bash
 CONFIG_FILE=inventory/kubestock/hosts.ini
 ansible master-1 -i ${CONFIG_FILE} -b -m fetch -a "src=/root/.kube/config dest=~/kubeconfig flat=yes"
-export KUBECONFIG=~/kubeconfig
-kubectl get nodes -o wide
+# Point the kubeconfig to the NLB (zero-trust entrypoint)
+NLB_DNS=$(terraform -chdir=~/kubestock-infrastructure/terraform/prod output -raw nlb_dns_name)
+kubectl --kubeconfig=~/kubeconfig config set-cluster kubestock --server="https://${NLB_DNS}:6443"
+
+# Smoke test via the load balancer
+kubectl --kubeconfig=~/kubeconfig get --raw=/healthz
+kubectl --kubeconfig=~/kubeconfig get nodes -o wide
 ```
 
 You should see `master-1`, `worker-1`, and `worker-2` in `Ready` state.
