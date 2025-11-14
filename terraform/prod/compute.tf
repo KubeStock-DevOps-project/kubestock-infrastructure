@@ -55,7 +55,7 @@ resource "aws_instance" "dev_server" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.dev_server_instance_type
   subnet_id              = aws_subnet.public[0].id # First public subnet (us-east-1a)
-  vpc_security_group_ids = [aws_security_group.bastion.id]
+  vpc_security_group_ids = [aws_security_group.dev_server.id]
   key_name               = aws_key_pair.kubestock.key_name
 
   # Auto-assign public IP (changes on each start, but free)
@@ -71,6 +71,39 @@ resource "aws_instance" "dev_server" {
     Role = "development"
   }
 
+  user_data = <<-EOF
+              #!/bin/bash
+              set -euo pipefail
+
+              sudo apt update && sudo apt upgrade -y
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              sudo apt install -y unzip
+              unzip awscliv2.zip
+              sudo ./aws/install
+              aws --version
+
+              sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
+              wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+              gpg --no-default-keyring --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg --fingerprint
+
+              ARCH=$$(dpkg --print-architecture)
+              CODENAME=$$(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs)
+              echo "deb [arch=$${ARCH} signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $${CODENAME} main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+              sudo apt update
+              sudo apt-get install terraform -y
+
+              sudo apt install -y software-properties-common
+              sudo add-apt-repository --yes --update ppa:ansible/ansible
+              sudo apt install -y ansible
+              ansible --version
+
+              sudo apt install -y python3 python3-pip
+              sudo apt install -y jq
+              sudo apt install -y unzip
+              exit 0
+              EOF
+
   # This instance can be stopped when not in use to save costs
   # When stopped, you only pay for EBS storage (~$1-2/month for 30GB)
 }
@@ -78,12 +111,15 @@ resource "aws_instance" "dev_server" {
 # Control Plane Node (Private Subnet in us-east-1a)
 # NOTE: Single control plane for cost savings. For full HA, deploy 3 control planes across 3 AZs.
 resource "aws_instance" "control_plane" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.control_plane_instance_type
-  subnet_id              = aws_subnet.private[0].id # First private subnet (us-east-1a)
-  vpc_security_group_ids = [aws_security_group.k8s_nodes.id]
-  key_name               = aws_key_pair.kubestock.key_name
-  iam_instance_profile   = aws_iam_instance_profile.k8s_nodes.name
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = var.control_plane_instance_type
+  subnet_id     = aws_subnet.private[0].id # First private subnet (us-east-1a)
+  vpc_security_group_ids = [
+    aws_security_group.control_plane.id,
+    aws_security_group.k8s_common.id
+  ]
+  key_name             = aws_key_pair.kubestock.key_name
+  iam_instance_profile = aws_iam_instance_profile.k8s_nodes.name
 
   root_block_device {
     volume_size = 30
@@ -91,11 +127,11 @@ resource "aws_instance" "control_plane" {
   }
 
   tags = {
-    Name                                        = "kubestock-control-plane"
-    Role                                        = "control-plane"
-    "kubernetes.io/cluster/kubestock"      = "owned"
-    "k8s.io/cluster-autoscaler/kubestock"  = "owned"
-    "k8s.io/cluster-autoscaler/enabled"         = "true"
+    Name                                  = "kubestock-control-plane"
+    Role                                  = "control-plane"
+    "kubernetes.io/cluster/kubestock"     = "owned"
+    "k8s.io/cluster-autoscaler/kubestock" = "owned"
+    "k8s.io/cluster-autoscaler/enabled"   = "true"
   }
 }
 
@@ -106,14 +142,17 @@ resource "aws_instance" "control_plane" {
 # Deployed across 2 AZs (us-east-1b, us-east-1c) for availability
 
 resource "aws_instance" "worker" {
-  count                  = 2
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.worker_instance_type
-  subnet_id              = aws_subnet.private[count.index % 2 == 0 ? 1 : 2].id # Alternate between us-east-1b and us-east-1c
-  vpc_security_group_ids = [aws_security_group.k8s_nodes.id]
-  key_name               = aws_key_pair.kubestock.key_name
-  iam_instance_profile   = aws_iam_instance_profile.k8s_nodes.name
-  
+  count         = 2
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = var.worker_instance_type
+  subnet_id     = aws_subnet.private[count.index % 2 == 0 ? 1 : 2].id # Alternate between us-east-1b and us-east-1c
+  vpc_security_group_ids = [
+    aws_security_group.workers.id,
+    aws_security_group.k8s_common.id
+  ]
+  key_name             = aws_key_pair.kubestock.key_name
+  iam_instance_profile = aws_iam_instance_profile.k8s_nodes.name
+
   # Fixed private IPs for Ansible inventory
   private_ip = count.index == 0 ? "10.0.11.30" : "10.0.12.30"
 

@@ -6,9 +6,9 @@
 
 terraform {
   backend "s3" {
-    bucket = "kubestock-terraform-state" # Placeholder - update with actual bucket name
-    key    = "terraform.tfstate"
-    region = "us-east-1"
+    bucket       = "kubestock-terraform-state" # Placeholder - update with actual bucket name
+    key          = "terraform.tfstate"
+    region       = "us-east-1"
     use_lockfile = true
   }
 }

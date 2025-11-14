@@ -124,7 +124,7 @@ variable "bastion_instance_type" {
 variable "dev_server_instance_type" {
   description = "Instance type for development server (VS Code, Terraform, Ansible)"
   type        = string
-  default     = "t3.large"
+  default     = "t3.medium"
 }
 
 variable "dev_server_volume_size" {

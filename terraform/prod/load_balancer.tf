@@ -5,13 +5,14 @@
 resource "aws_lb" "k8s_api" {
   name               = "kubestock-nlb-api"
   load_balancer_type = "network"
-  internal           = false
-  
-  # Deploy NLB across all 3 public subnets for HA
+  internal           = true
+  security_groups    = [aws_security_group.nlb_api.id]
+
+  # Deploy NLB across all 3 private subnets for HA
   subnets = [
-    aws_subnet.public[0].id,
-    aws_subnet.public[1].id,
-    aws_subnet.public[2].id
+    aws_subnet.private[0].id,
+    aws_subnet.private[1].id,
+    aws_subnet.private[2].id
   ]
 
   enable_cross_zone_load_balancing = true

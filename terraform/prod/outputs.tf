@@ -91,8 +91,8 @@ output "dev_server_state" {
 output "dev_server_management" {
   description = "Commands to manage the development server"
   value = {
-    start = "aws ec2 start-instances --instance-ids ${aws_instance.dev_server.id}"
-    stop  = "aws ec2 stop-instances --instance-ids ${aws_instance.dev_server.id}"
+    start  = "aws ec2 start-instances --instance-ids ${aws_instance.dev_server.id}"
+    stop   = "aws ec2 stop-instances --instance-ids ${aws_instance.dev_server.id}"
     status = "aws ec2 describe-instances --instance-ids ${aws_instance.dev_server.id} --query 'Reservations[0].Instances[0].State.Name' --output text"
     get_ip = "aws ec2 describe-instances --instance-ids ${aws_instance.dev_server.id} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text"
   }
@@ -242,9 +242,24 @@ output "sg_bastion_id" {
   value       = aws_security_group.bastion.id
 }
 
-output "sg_k8s_nodes_id" {
-  description = "Security group ID for Kubernetes nodes"
-  value       = aws_security_group.k8s_nodes.id
+output "sg_dev_server_id" {
+  description = "Security group ID for dev server"
+  value       = aws_security_group.dev_server.id
+}
+
+output "sg_k8s_common_id" {
+  description = "Security group ID for K8s inter-node communication"
+  value       = aws_security_group.k8s_common.id
+}
+
+output "sg_control_plane_id" {
+  description = "Security group ID for control plane"
+  value       = aws_security_group.control_plane.id
+}
+
+output "sg_workers_id" {
+  description = "Security group ID for worker nodes"
+  value       = aws_security_group.workers.id
 }
 
 output "sg_rds_id" {

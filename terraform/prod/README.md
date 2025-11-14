@@ -2,13 +2,35 @@
 
 ## Overview
 
-This Terraform configuration deploys the **KubeStock** infrastructure on AWS with a strategic hybrid approach:
+Production Kubernetes infrastructure on AWS with **zero-trust security** and cost-optimized architecture:
 
-- **Network**: **3-AZ High Availability** (3 public + 3 private subnets)
-- **Compute**: **Non-HA "Sprint" Configuration** (1 control plane, 1 worker ASG for cost savings)
-- **Database**: **Single-AZ RDS** (cost-optimized)
+- **Network**: 3-AZ High Availability (3 public + 3 private subnets)
+- **Compute**: Single control plane + 2 static workers across AZs
+- **Database**: Single-AZ RDS PostgreSQL 16
+- **Security**: Fine-grained security groups with least privilege access
 
-This setup provides a production-grade network foundation that can easily scale to full HA when needed, while keeping compute and database costs low during initial deployment.
+---
+
+## Zero-Trust Security Model
+
+### Access Patterns
+- **Bastion** (t3.micro): kubectl operations only via NLB, direct RDS access
+- **Dev Server** (t3.medium): SSH to all nodes, direct kubectl, Ansible/Terraform
+- **Control Plane** + **Workers**: Inter-node communication via shared security group
+
+### Security Groups (7 total)
+```
+my_ip → Bastion → NLB → Control Plane (kubectl)
+my_ip → Dev Server → All Nodes (SSH)
+Bastion → RDS (direct)
+K8s Pods → RDS (application traffic)
+```
+
+**Key Rules**:
+- ❌ Bastion **cannot** SSH to nodes (use dev server)
+- ✅ Dev server can SSH to all nodes
+- ✅ Bastion accesses kubectl via NLB (6443)
+- ✅ Separate SGs for control plane, workers, inter-node traffic
 
 ---
 
@@ -21,225 +43,160 @@ This setup provides a production-grade network foundation that can easily scale 
 - **NAT Gateway**: 1 NAT Gateway in us-east-1a (cost optimization)
 - **Internet Gateway**: 1 IGW for public internet access
 
-### Compute (Non-HA)
-- **Bastion Host**: 1x t3.micro in public subnet (us-east-1a)
-- **Development Server**: 1x t3.medium in public subnet (us-east-1a)
-  - For running VS Code Server, Terraform, Ansible
-  - No Elastic IP (free public IP that changes on restart)
-  - Stop when not in use - costs $0 when stopped (only storage)
-- **Control Plane**: 1x t3.medium in private subnet (us-east-1a)
-- **Worker Nodes**: Auto Scaling Group (1 min, 1 desired, 3 max) spanning all 3 private subnets
-  - Instance Type: t3.large
-  - ASG spans 3 AZs for future HA, but starts with 1 worker for cost savings
+### Compute (Cost-Optimized)
+- **Bastion**: 1x t3.micro (kubectl only)
+- **Dev Server**: 1x t3.medium (SSH, Ansible, VS Code) - stop when not in use
+- **Control Plane**: 1x t3.medium in us-east-1a
+- **Workers**: 2x t3.large with static IPs (10.0.11.30, 10.0.12.30)
 
 ### Database
-- **RDS PostgreSQL 16**: Single-AZ db.t4g.medium in us-east-1a
-- **Storage**: 20GB initial, auto-scales up to 100GB
-- **Subnet Group**: Uses all 3 private subnets (AWS requirement)
+- **RDS PostgreSQL 16**: Single-AZ db.t4g.medium
+- **Storage**: 20GB initial, auto-scales to 100GB
 
 ### Load Balancer
-- **Network Load Balancer**: Spans all 3 public subnets
-- **Port**: 6443 (Kubernetes API)
-- **Target**: Control Plane instance
-
-### Authentication
-- **AWS Cognito**: User Pool and Client for application authentication
-
-### IAM
-- **Node Role**: IAM role with policies for Cluster Autoscaler, EBS CSI, and AWS Load Balancer Controller
+- **NLB**: Internal, in private subnets
+- **Port**: 6443 (K8s API)
+- **Target**: Control plane
 
 ---
 
 ## Prerequisites
 
-1. **AWS Account** with appropriate permissions
-2. **Terraform** >= 1.5 installed
-3. **SSH Key Pair** generated:
-   ```bash
-   ssh-keygen -t rsa -b 4096 -f ~/.ssh/kubestock-key -C "kubestock-prod"
-   ```
-4. **S3 Bucket** for Terraform state (update `backend.tf` with actual bucket name)
+1. AWS Account with admin permissions
+2. Terraform >= 1.5
+3. SSH key pair: `ssh-keygen -t rsa -b 4096 -f ~/.ssh/kubestock-key`
+4. S3 bucket for state (update `backend.tf`)
 
 ---
 
-## Deployment Steps
-
-### 1. Configure Variables
+## Quick Deploy
 
 ```bash
-# Copy the example variables file
+# 1. Create terraform.tfvars
 cp terraform.tfvars.example terraform.tfvars
 
-# Edit terraform.tfvars with your values
+# 2. Edit with your values
 nano terraform.tfvars
-```
+# Required: my_ip, rds_password, ssh_public_key_content
 
-**Required Variables:**
-- `my_ip`: Your public IP (get with `curl -4 ifconfig.me`)
-- `rds_password`: Strong password for RDS PostgreSQL
-- `ssh_public_key_content`: Content of your SSH public key (get with `cat ~/.ssh/kubestock-key.pub`)
-
-### 2. Initialize Terraform
-
-```bash
+# 3. Deploy
 terraform init
-```
-
-### 3. Review the Plan
-
-```bash
 terraform plan
-```
-
-### 4. Deploy Infrastructure
-
-```bash
 terraform apply
 ```
 
-Type `yes` when prompted to confirm deployment.
+**Get SSH public key content:**
+```bash
+cat ~/.ssh/kubestock-key.pub
+```
+
+**For CI/CD**: Use `ssh_public_key_content` variable directly (no file path issues).
 
 ---
 
-## Post-Deployment
+## Cost Breakdown
 
-### Access Bastion Host
+**Monthly Estimate**: ~$206/month
+- NAT Gateway: $32
+- Bastion (t3.micro): $7
+- Dev Server (t3.medium): $30 (or $2 when stopped)
+- Control Plane (t3.medium): $30
+- Workers (2x t3.large): $120
+- RDS (db.t4g.medium): $50
+- NLB: $16
+- Storage/Transfer: $10
+
+**Save ~$28/month**: Stop dev server when not in use.
+
+---
+
+## Dev Server Management
 
 ```bash
-# SSH to bastion
-ssh -i ~/.ssh/kubestock-key ubuntu@<BASTION_PUBLIC_IP>
-```
-
-### Access Development Server
-
-The development server is designed for running VS Code Server, Terraform, and Ansible. It uses a dynamic public IP (free) instead of an Elastic IP.
-
-```bash
-# Get current IP
-DEV_IP=$(terraform output -raw dev_server_public_ip)
-
-# SSH to dev server
-ssh -i ~/.ssh/kubestock-key ubuntu@$DEV_IP
-
-# Or use the output command directly
-terraform output dev_server_ssh_command
-```
-
-**Cost Optimization:**
-```bash
-# Stop the dev server when not in use (costs $0 when stopped)
+# Stop (save money)
 aws ec2 stop-instances --instance-ids $(terraform output -raw dev_server_instance_id)
 
-# Start when needed
+# Start (when needed)
 aws ec2 start-instances --instance-ids $(terraform output -raw dev_server_instance_id)
 
-# Get new IP after starting (IP changes on each start)
-aws ec2 describe-instances \
-  --instance-ids $(terraform output -raw dev_server_instance_id) \
-  --query 'Reservations[0].Instances[0].PublicIpAddress' \
-  --output text
-```
-
-**Monthly Costs:**
-- Running 24/7: ~$30/month (t3.medium)
-- Stopped: ~$1-2/month (30GB storage only)
-- **Recommended**: Stop when not in use, save ~$28/month
-
-### Access Control Plane via Bastion
-
-```bash
-# SSH to control plane through bastion
-ssh -i ~/.ssh/kubestock-key -J ubuntu@<BASTION_PUBLIC_IP> ubuntu@<CONTROL_PLANE_PRIVATE_IP>
-```
-
-### Port Forward to RDS
-
-```bash
-# Forward local port 5432 to RDS
-ssh -i ~/.ssh/kubestock-key -L 5432:<RDS_ADDRESS>:5432 -J ubuntu@<BASTION_PUBLIC_IP> ubuntu@<CONTROL_PLANE_PRIVATE_IP>
-```
-
-### Get Outputs
-
-```bash
-# View all outputs
-terraform output
-
-# View specific output
-terraform output bastion_public_ip
-terraform output k8s_api_endpoint
+# Get new IP after start
+terraform output dev_server_public_ip
 ```
 
 ---
 
-## Cost Optimization Notes
+## Security Groups (Zero-Trust)
 
-This configuration is optimized for cost while maintaining a production-grade network:
-
-1. **Single NAT Gateway**: All 3 private subnets route through 1 NAT Gateway (saves ~$64/month)
-2. **Single Control Plane**: 1x t3.medium instead of 3 (saves ~$60/month)
-3. **Single Worker**: ASG starts with 1 worker (saves ~$60/month)
-4. **Single-AZ RDS**: No Multi-AZ replication (saves ~$40/month)
-
-**Total Monthly Savings**: ~$224/month compared to full HA
-
----
-
-## Scaling to Full HA
-
-When ready to scale to full production HA:
-
-1. **NAT Gateways**: Create 2 more NAT Gateways in us-east-1b and us-east-1c
-2. **Control Plane**: Deploy 2 more control plane instances in us-east-1b and us-east-1c
-3. **Workers**: Increase ASG `min_size` and `desired_capacity` to 3
-4. **RDS**: Change `multi_az = true` in `database.tf`
-5. **Update NLB**: Add additional control plane instances to the target group
+| SG | Purpose | Ingress | Assigned To |
+|----|---------|---------|-------------|
+| `bastion` | kubectl operations | SSH (22) from my_ip | Bastion host |
+| `dev_server` | SSH to nodes, Ansible | SSH (22) from my_ip | Dev server |
+| `k8s_common` | Inter-node traffic | All ports from self | Control plane + Workers |
+| `control_plane` | Control plane rules | SSH from dev_server, API (6443) from NLB + dev_server | Control plane |
+| `workers` | Worker rules | SSH from dev_server, NodePort from NLB | Workers |
+| `rds` | Database access | 5432 from bastion, control plane, workers | RDS |
+| `nlb_api` | Load balancer | 6443 from bastion | NLB |
 
 ---
 
-## Security Groups
-
-- **sg_bastion**: Port 22 from your IP
-- **sg_k8s_nodes**: Port 22 from bastion, all traffic between nodes, port 6443 from NLB
-- **sg_rds**: Port 5432 from K8s nodes only
-- **sg_nlb_api**: Port 6443 from bastion and your IP
-
----
-
-## Cleanup
-
-To destroy all resources:
+## Quick Access Guide
 
 ```bash
-terraform destroy
-```
+# SSH patterns
+ssh ubuntu@<bastion-ip>              # ✅ kubectl via NLB
+ssh ubuntu@<dev-server-ip>           # ✅ SSH to nodes, Ansible
+ssh -J ubuntu@<dev-ip> ubuntu@<node> # ✅ Jump through dev server
 
-**WARNING**: This will delete all resources including the RDS database. Make sure to take a final snapshot if needed.
+# From bastion (kubectl only)
+kubectl get nodes                    # ✅ Via NLB
+psql -h <rds-endpoint>              # ✅ Direct RDS access
+ssh ubuntu@<node>                    # ❌ Blocked
+
+# From dev server (full access)
+ssh ubuntu@<node>                    # ✅ SSH to any node
+kubectl --server=https://<cp>:6443   # ✅ Direct API access
+ansible-playbook site.yml            # ✅ Run playbooks
+psql -h <rds-endpoint>              # ❌ Use bastion for DB
+```
 
 ---
 
 ## Files
 
-- `backend.tf`: S3 backend configuration
-- `main.tf`: Terraform and provider configuration
-- `variables.tf`: Variable definitions
-- `network.tf`: VPC, subnets, NAT, IGW, route tables, security groups
-- `compute.tf`: EC2 instances, launch template, ASG
-- `iam.tf`: IAM roles, policies, instance profile
-- `database.tf`: RDS PostgreSQL
-- `cognito.tf`: Cognito User Pool
-- `load_balancer.tf`: Network Load Balancer for K8s API
-- `outputs.tf`: Output values
-- `terraform.tfvars.example`: Example variables file
+- `backend.tf` - S3 backend configuration
+- `main.tf` - Provider configuration
+- `variables.tf` - Input variables
+- `network.tf` - VPC, subnets, security groups (zero-trust)
+- `compute.tf` - EC2 instances
+- `iam.tf` - IAM roles and policies
+- `database.tf` - RDS PostgreSQL
+- `cognito.tf` - Cognito user pool
+- `load_balancer.tf` - Internal NLB
+- `outputs.tf` - Output values
 
 ---
 
-## Support
+## Cleanup
 
-For issues or questions, refer to the project documentation or contact the DevOps team.
+```bash
+terraform destroy
+```
+
+⚠️ **WARNING**: Deletes everything including RDS (final snapshot created).
 
 ---
 
-**Project**: KubeStock  
-**Environment**: Production  
-**Managed By**: Terraform
+## Troubleshooting
+
+### Cannot SSH to nodes from bastion
+**Expected behavior** - Use dev server instead.
+
+### kubectl not working
+Check NLB target health: `aws elbv2 describe-target-health --target-group-arn <arn>`
+
+### Nodes can't communicate
+Verify both specific SG + `k8s_common` SG assigned to each node.
+
+---
+
+**Project**: KubeStock | **Environment**: Production | **Managed By**: Terraform
