@@ -247,6 +247,11 @@ echo "--- APP DEV TEAM HANDOFF ---"
 echo "Production RDS Host: ${RDS_HOST}"
 echo "Cognito Pool ID: ${COGNITO_POOL_ID}"
 echo "Cognito Client ID: ${COGNITO_CLIENT_ID}"
+
+# 5. Generate a kubectl-only cluster-admin kubeconfig for the GitOps operator
+cd ~/kubestock-infrastructure
+./scripts/gen-kubectl-dev-kubeconfig.sh gitops ops-gitops cluster-admin
+echo "GitOps kubeconfig generated: kubeconfig-dev-gitops (distribute securely; devs must tunnel via bastion→NLB)"
 ```
 
 ---

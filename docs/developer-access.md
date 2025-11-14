@@ -2,6 +2,13 @@
 
 Step-by-step instructions for onboarding/offboarding developers, configuring kubectl, and establishing secure tunnels to the Kubestock cluster.
 
+## Roles & responsibilities
+
+- **Cluster administrator (you)** manages the entire infrastructure from the dev server. You run Terraform/Ansible, manage nodes, and share kubeconfig with the rest of the team.
+- **Kubectl-only developers** use the bastion to tunnel to the NLB and run kubectl. They cannot SSH into the control plane or workers and only receive access to the API via the load balancer.
+
+> Admins: see `kubectl-only-developer-setup.md` for generating a least-privilege, token-based kubeconfig for a new developer (service account + RBAC + kubeconfig automation script).
+
 ## 1. Onboarding a developer
 
 ### 1.1 Developer generates a key pair
@@ -28,6 +35,7 @@ On the dev server or bastion:
 cat ~/kubeconfig
 ```
 Share the file via a secure channel (never commit to git). Developers should save it as `~/.kube/kubestock-config` with `chmod 600`.
+> The kubeconfig retrieved from `master-1` through Ansible lives on the dev server. Cluster administrators keep this file updated and pass it to kubectl-only developers as needed.
 
 ## 2. Configuring kubectl & tunnels (developer laptop)
 
@@ -71,7 +79,9 @@ Host ks-worker-2
   IdentityFile ~/.ssh/kubestock-dev
   ProxyJump kubestock
 ```
-Adjust identities/hostnames as needed.
+Adjust identities/hostnames as needed. Developers who are limited to kubectl do not need the `ks-control`/`ks-worker-*` entries because they are not permitted to SSH into the bare-metal nodes; those hosts are provided for cluster administrators only.
+
+> GitOps/cluster-admin users: your kubeconfig may grant full cluster privileges (token-based). You still access the API only via the bastion→NLB tunnel. See `kubectl-only-developer-setup.md` for how admins generate and rotate your kubeconfig.
 
 ### 2.4 Shell helpers (`~/.bashrc` or `~/.zshrc`)
 ```bash
