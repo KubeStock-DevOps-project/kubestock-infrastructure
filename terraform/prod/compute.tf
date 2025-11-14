@@ -99,6 +99,7 @@ resource "aws_instance" "dev_server" {
               ansible --version
 
               sudo apt install -y python3 python3-pip
+              sudo apt install python3.10-venv
               sudo apt install -y jq
               sudo apt install -y unzip
               exit 0
