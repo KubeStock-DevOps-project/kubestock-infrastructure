@@ -25,6 +25,15 @@ jobs:
         working-directory: terraform/prod
         run: terraform fmt -check
 
+      - name: Generate terraform.tfvars
+        working-directory: terraform/prod
+        run: |
+          cat > terraform.tfvars <<EOF
+          my_ip = "${{ vars.MY_IP }}"
+          ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
+          rds_password = "${{ secrets.RDS_PASSWORD }}"
+          EOF
+
       - name: Terraform Init (prod)
         working-directory: terraform/prod
         env:
