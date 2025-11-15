@@ -52,3 +52,5 @@ rds_password = "CHANGE_ME_TO_A_STRONG_PASSWORD"
 # rds_instance_class        = "db.t4g.medium"
 # rds_allocated_storage     = 20
 # rds_max_allocated_storage = 100
+
+
