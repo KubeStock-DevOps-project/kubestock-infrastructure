@@ -1,0 +1,54 @@
+name: Terraform Prod Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'terraform/**'
+
+jobs:
+  deploy-prod:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: terraform-prod
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.13.5'
+
+      - name: Terraform Format Check (prod)
+        working-directory: terraform/prod
+        run: terraform fmt -check
+
+      - name: Terraform Init (prod)
+        working-directory: terraform/prod
+        env:
+          AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: terraform init
+
+      - name: Terraform Validate (prod)
+        working-directory: terraform/prod
+        run: terraform validate
+
+      - name: Terraform Plan (prod)
+        working-directory: terraform/prod
+        env:
+          AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply (prod)
+        working-directory: terraform/prod
+        env:
+          AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: terraform apply -auto-approve tfplan
