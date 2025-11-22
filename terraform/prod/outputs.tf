@@ -159,65 +159,65 @@ output "nlb_arn" {
 # RDS DATABASE
 # ========================================
 
-output "rds_endpoint" {
-  description = "RDS PostgreSQL endpoint"
-  value       = aws_db_instance.kubestock.endpoint
-}
+# output "rds_endpoint" {
+#   description = "RDS PostgreSQL endpoint"
+#   value       = aws_db_instance.kubestock.endpoint
+# }
 
-output "rds_address" {
-  description = "RDS PostgreSQL address"
-  value       = aws_db_instance.kubestock.address
-}
+# output "rds_address" {
+#   description = "RDS PostgreSQL address"
+#   value       = aws_db_instance.kubestock.address
+# }
 
-output "rds_port" {
-  description = "RDS PostgreSQL port"
-  value       = aws_db_instance.kubestock.port
-}
+# output "rds_port" {
+#   description = "RDS PostgreSQL port"
+#   value       = aws_db_instance.kubestock.port
+# }
 
-output "rds_username" {
-  description = "RDS PostgreSQL username"
-  value       = aws_db_instance.kubestock.username
-}
+# output "rds_username" {
+#   description = "RDS PostgreSQL username"
+#   value       = aws_db_instance.kubestock.username
+# }
 
-output "rds_password" {
-  description = "RDS PostgreSQL password"
-  value       = aws_db_instance.kubestock.password
-  sensitive   = true
-}
+# output "rds_password" {
+#   description = "RDS PostgreSQL password"
+#   value       = aws_db_instance.kubestock.password
+#   sensitive   = true
+# }
 
-output "rds_database_name" {
-  description = "RDS database identifier"
-  value       = aws_db_instance.kubestock.identifier
-}
+# output "rds_database_name" {
+#   description = "RDS database identifier"
+#   value       = aws_db_instance.kubestock.identifier
+# }
 
-output "rds_port_forward_command" {
-  description = "SSH command to set up port forwarding to RDS via bastion"
-  value       = "ssh -i ~/.ssh/kubestock-key -L 5432:${aws_db_instance.kubestock.address}:5432 -J ubuntu@${aws_eip.bastion.public_ip} ubuntu@${aws_instance.control_plane.private_ip}"
-}
+# output "rds_port_forward_command" {
+#   description = "SSH command to set up port forwarding to RDS via bastion"
+#   value       = "ssh -i ~/.ssh/kubestock-key -L 5432:${aws_db_instance.kubestock.address}:5432 -J ubuntu@${aws_eip.bastion.public_ip} ubuntu@${aws_instance.control_plane.private_ip}"
+# }
 
 # ========================================
 # COGNITO
 # ========================================
 
-output "cognito_user_pool_id" {
-  description = "Cognito User Pool ID"
-  value       = aws_cognito_user_pool.kubestock.id
-}
+# output "cognito_user_pool_id" {
+#   description = "Cognito User Pool ID"
+#   value       = aws_cognito_user_pool.kubestock.id
+# }
 
-output "cognito_user_pool_arn" {
-  description = "Cognito User Pool ARN"
-  value       = aws_cognito_user_pool.kubestock.arn
-}
+# output "cognito_user_pool_arn" {
+#   description = "Cognito User Pool ARN"
+#   value       = aws_cognito_user_pool.kubestock.arn
+# }
 
-output "cognito_user_pool_endpoint" {
-  description = "Cognito User Pool endpoint"
-  value       = aws_cognito_user_pool.kubestock.endpoint
-}
+# output "cognito_user_pool_endpoint" {
+#   description = "Cognito User Pool endpoint"
+#   value       = aws_cognito_user_pool.kubestock.endpoint
+# }
 
-output "cognito_client_id" {
-  description = "Cognito User Pool Client ID"
-  value       = aws_cognito_user_pool_client.kubestock.id
-}
+# output "cognito_client_id" {
+#   description = "Cognito User Pool Client ID"
+#   value       = aws_cognito_user_pool_client.kubestock.id
+# }
 
 # ========================================
 # IAM
@@ -262,10 +262,10 @@ output "sg_workers_id" {
   value       = aws_security_group.workers.id
 }
 
-output "sg_rds_id" {
-  description = "Security group ID for RDS"
-  value       = aws_security_group.rds.id
-}
+# output "sg_rds_id" {
+#   description = "Security group ID for RDS"
+#   value       = aws_security_group.rds.id
+# }
 
 output "sg_nlb_api_id" {
   description = "Security group ID for NLB API"

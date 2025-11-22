@@ -88,9 +88,9 @@ A concise overview of the production cluster plus links to detailed runbooks.
 
 ## 🛰️ Cluster Snapshot
 
-- **Control plane**: `master-1` (`t3.medium`, private IP `10.0.10.21`, AZ `us-east-1a`).
-- **Workers**: `worker-1` (`10.0.11.30`, AZ `us-east-1b`) and `worker-2` (`10.0.12.30`, AZ `us-east-1c`).
-- **Networking**: VPC `10.0.0.0/16`, three public + three private subnets, single NAT (`nat-031c7ccd7503f985a`).
+- **Control plane**: `master-1` (`t3.medium`, private IP `10.0.10.21`, AZ `ap-south-1a`).
+- **Workers**: `worker-1` (`10.0.11.30`, AZ `ap-south-1b`) and `worker-2` (`10.0.12.30`, AZ `ap-south-1c`).
+- **Networking**: VPC `10.0.0.0/16`, three public + three private subnets, single NAT (ap-south-1a).
 - **Kubernetes**: v1.34.1, containerd, Calico.
 - **Add-ons**: AWS EBS CSI driver, NGINX Ingress, ArgoCD.
 - **Access**: Bastion `100.30.61.159` (always on) and dev server `13.223.102.35` (start/stop to save costs).
