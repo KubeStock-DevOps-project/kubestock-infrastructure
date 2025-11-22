@@ -194,7 +194,7 @@ cilium_l2announcements: false
 
 # cilium_operator_replicas: 2
 
-# The address at which the cillium operator bind health check api
+# The address at which the cilium operator bind health check api
 # cilium_operator_api_serve_addr: "127.0.0.1:9234"
 
 ## A dictionary of extra config variables to add to cilium-config, formatted like:
