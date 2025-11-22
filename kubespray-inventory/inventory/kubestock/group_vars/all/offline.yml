@@ -1,7 +1,7 @@
 ---
 ## Global Offline settings
 ### Private Container Image Registry
-# registry_host: "myprivateregisry.com"
+# registry_host: "myprivateregistry.com"
 # files_repo: "http://myprivatehttpd"
 ### If using CentOS, RedHat, AlmaLinux or Fedora
 # yum_repo: "http://myinternalyumrepo"
