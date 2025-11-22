@@ -7,7 +7,7 @@
 # ========================================
 # AWS Configuration
 # ========================================
-aws_region = "us-east-1"
+aws_region = "ap-south-1"
 
 # ========================================
 # SECURITY
@@ -24,14 +24,14 @@ ssh_public_key_content = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... your-key-he
 # ========================================
 # Database Credentials
 # ========================================
-rds_user     = "kubestock"
-rds_password = "CHANGE_ME_TO_A_STRONG_PASSWORD"
+# rds_user     = "kubestock"
+# rds_password = "CHANGE_ME_TO_A_STRONG_PASSWORD"
 
 # ========================================
 # Networking (Optional - defaults provided)
 # ========================================
-# availability_zones     = ["us-east-1a", "us-east-1b", "us-east-1c"]
-# primary_az             = "us-east-1a"
+# availability_zones     = ["ap-south-1a", "ap-south-1b", "ap-south-1c"]
+# primary_az             = "ap-south-1a"
 # vpc_cidr               = "10.0.0.0/16"
 # public_subnet_cidrs    = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
 # private_subnet_cidrs   = ["10.0.10.0/24", "10.0.11.0/24", "10.0.12.0/24"]

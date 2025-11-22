@@ -9,7 +9,7 @@
 variable "aws_region" {
   description = "The AWS region to deploy resources in"
   type        = string
-  default     = "us-east-1"
+  default     = "ap-south-1"
 }
 
 variable "project_name" {
@@ -31,13 +31,13 @@ variable "environment" {
 variable "availability_zones" {
   description = "List of availability zones for high availability"
   type        = list(string)
-  default     = ["us-east-1a", "us-east-1b", "us-east-1c"]
+  default     = ["ap-south-1a", "ap-south-1b", "ap-south-1c"]
 }
 
 variable "primary_az" {
   description = "Primary availability zone for single-AZ resources (NAT Gateway, Control Plane, RDS)"
   type        = string
-  default     = "us-east-1a"
+  default     = "ap-south-1a"
 }
 
 # ========================================
@@ -81,35 +81,35 @@ variable "ssh_public_key_content" {
 # DATABASE (RDS)
 # ========================================
 
-variable "rds_user" {
-  description = "The username for the RDS PostgreSQL database"
-  type        = string
-  default     = "kubestock"
-}
+# variable "rds_user" {
+#   description = "The username for the RDS PostgreSQL database"
+#   type        = string
+#   default     = "kubestock"
+# }
 
-variable "rds_password" {
-  description = "The password for the RDS PostgreSQL database"
-  type        = string
-  sensitive   = true
-}
+# variable "rds_password" {
+#   description = "The password for the RDS PostgreSQL database"
+#   type        = string
+#   sensitive   = true
+# }
 
-variable "rds_instance_class" {
-  description = "RDS instance class"
-  type        = string
-  default     = "db.t4g.medium"
-}
+# variable "rds_instance_class" {
+#   description = "RDS instance class"
+#   type        = string
+#   default     = "db.t4g.medium"
+# }
 
-variable "rds_allocated_storage" {
-  description = "Initial allocated storage for RDS (GB)"
-  type        = number
-  default     = 20
-}
+# variable "rds_allocated_storage" {
+#   description = "Initial allocated storage for RDS (GB)"
+#   type        = number
+#   default     = 20
+# }
 
-variable "rds_max_allocated_storage" {
-  description = "Maximum allocated storage for RDS autoscaling (GB)"
-  type        = number
-  default     = 100
-}
+# variable "rds_max_allocated_storage" {
+#   description = "Maximum allocated storage for RDS autoscaling (GB)"
+#   type        = number
+#   default     = 100
+# }
 
 # ========================================
 # COMPUTE

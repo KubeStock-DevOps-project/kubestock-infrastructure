@@ -3,7 +3,7 @@
 Production-grade Kubernetes infrastructure on AWS with **zero-trust security model** and automated CI/CD deployment via GitHub Actions.
 
 [![Terraform](https://img.shields.io/badge/Terraform-1.13.5-purple?logo=terraform)](https://www.terraform.io/)
-[![AWS](https://img.shields.io/badge/AWS-us--east--1-orange?logo=amazon-aws)](https://aws.amazon.com/)
+[![AWS](https://img.shields.io/badge/AWS-ap--south--1-orange?logo=amazon-aws)](https://aws.amazon.com/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Self--Managed-blue?logo=kubernetes)](https://kubernetes.io/)
 
 ---
@@ -29,11 +29,11 @@ Production-grade Kubernetes infrastructure on AWS with **zero-trust security mod
 - **Compute**: 
   - 1x Bastion Host (t3.micro) - kubectl operations only
   - 1x Dev Server (t3.medium) - SSH gateway, Ansible, Terraform
-  - 1x Control Plane (t3.medium) - Kubernetes master in us-east-1a
-  - 2x Worker Nodes (t3.medium) - Static instances across us-east-1b and us-east-1c
+  - 1x Control Plane (t3.medium) - Kubernetes master in ap-south-1a
+  - 2x Worker Nodes (t3.medium) - Static instances across ap-south-1b and ap-south-1c
 - **Database**: Single-AZ RDS PostgreSQL 16 (db.t4g.medium) with auto-scaling storage
 - **Load Balancer**: Internal NLB for Kubernetes API (port 6443)
-- **NAT Gateway**: Single NAT in us-east-1a for cost optimization
+- **NAT Gateway**: Single NAT in ap-south-1a for cost optimization
 
 **Key Design Decisions:**
 - ✅ **No Auto Scaling Groups** - Static worker nodes managed via Ansible/Kubespray
@@ -78,25 +78,25 @@ K8s Nodes + Bastion → RDS (PostgreSQL:5432)
 ### Networking
 - **VPC**: `10.0.0.0/16`
 - **Public Subnets**: 
-  - `10.0.1.0/24` (us-east-1a) - Bastion, Dev Server
-  - `10.0.2.0/24` (us-east-1b)
-  - `10.0.3.0/24` (us-east-1c)
+  - `10.0.1.0/24` (ap-south-1a) - Bastion, Dev Server
+  - `10.0.2.0/24` (ap-south-1b)
+  - `10.0.3.0/24` (ap-south-1c)
 - **Private Subnets**: 
-  - `10.0.10.0/24` (us-east-1a) - Control Plane, RDS
-  - `10.0.11.0/24` (us-east-1b) - Worker 1
-  - `10.0.12.0/24` (us-east-1c) - Worker 2
-- **NAT Gateway**: Single NAT in us-east-1a (saves ~$64/month vs 3 NATs)
+  - `10.0.10.0/24` (ap-south-1a) - Control Plane, RDS
+  - `10.0.11.0/24` (ap-south-1b) - Worker 1
+  - `10.0.12.0/24` (ap-south-1c) - Worker 2
+- **NAT Gateway**: Single NAT in ap-south-1a (saves ~$64/month vs 3 NATs)
 - **Internet Gateway**: Single IGW for public subnet internet access
 
 ### Compute Instances
 
 | Instance | Type | Subnet | IP | Purpose |
-|----------|------|--------|-----|---------|
-| Bastion | t3.micro | Public (1a) | Elastic IP | kubectl via NLB, RDS access |
-| Dev Server | t3.medium | Public (1a) | Dynamic (free) | SSH gateway, Ansible, Terraform |
-| Control Plane | t3.medium | Private (1a) | `10.0.10.21` | Kubernetes master |
-| Worker 1 | t3.medium | Private (1b) | `10.0.11.30` | Kubernetes worker |
-| Worker 2 | t3.medium | Private (1c) | `10.0.12.30` | Kubernetes worker |
+|----------|------|--------|-----|---------||
+| Bastion | t3.micro | Public (ap-south-1a) | Elastic IP | kubectl via NLB, RDS access |
+| Dev Server | t3.medium | Public (ap-south-1a) | Dynamic (free) | SSH gateway, Ansible, Terraform |
+| Control Plane | t3.medium | Private (ap-south-1a) | `10.0.10.21` | Kubernetes master |
+| Worker 1 | t3.medium | Private (ap-south-1b) | `10.0.11.30` | Kubernetes worker |
+| Worker 2 | t3.medium | Private (ap-south-1c) | `10.0.12.30` | Kubernetes worker |
 
 **Note:** Dev server has no Elastic IP - public IP changes on start/stop but costs $0 when stopped.
 
@@ -104,7 +104,7 @@ K8s Nodes + Bastion → RDS (PostgreSQL:5432)
 - **Engine**: PostgreSQL 16.6
 - **Instance**: db.t4g.medium (ARM-based Graviton)
 - **Storage**: 20GB initial, auto-scales to 100GB (gp3)
-- **HA**: Single-AZ in us-east-1a (multi-AZ disabled for cost savings)
+- **HA**: Single-AZ in ap-south-1a (multi-AZ disabled for cost savings)
 - **Backups**: Disabled in dev mode (enable for production)
 
 ### Load Balancer
@@ -196,7 +196,7 @@ terraform output nlb_dns_name
 
 #### Variables (non-sensitive):
 - `AWS_ACCESS_KEY_ID` - AWS access key
-- `AWS_REGION` - Deployment region (e.g., `us-east-1`)
+- `AWS_REGION` - Deployment region (e.g., `ap-south-1`)
 - `MY_IP` - Your public IP with CIDR (e.g., `1.2.3.4/32`)
 
 #### Secrets (sensitive):
@@ -276,8 +276,8 @@ When proposing infrastructure changes:
 **Monthly Estimate**: ~$191/month (with dev server stopped)
 
 | Resource | Spec | Monthly Cost |
-|----------|------|--------------|
-| NAT Gateway | 1x in us-east-1a | $32 |
+|----------|------|--------------||
+| NAT Gateway | 1x in ap-south-1a | $32 |
 | Bastion | t3.micro (24/7) | $7 |
 | Dev Server | t3.medium (stopped) | $2 (storage only) |
 | Control Plane | t3.medium (24/7) | $30 |
@@ -291,7 +291,7 @@ When proposing infrastructure changes:
 - Stop dev server when not in use: **saves $28/month**
 - Use Spot Instances for workers: **saves ~40%** (requires setup)
 - Enable RDS storage autoscaling: prevents over-provisioning
-- Monitor NAT Gateway data transfer: largest variable cost
+- Monitor NAT Gateway data transfer in ap-south-1a: largest variable cost
 
 ---
 
