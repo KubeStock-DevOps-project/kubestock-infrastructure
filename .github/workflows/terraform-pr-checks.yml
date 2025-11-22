@@ -9,6 +9,10 @@ on:
 jobs:
   pr-checks:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,21 +34,16 @@ jobs:
         working-directory: terraform/prod
         run: terraform validate
 
-      - name: AWS CLI Login (prod)
-        working-directory: terraform/prod
-        env:
-          AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-        run: aws sts get-caller-identity
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: 'arn:aws:iam::478468757808:policy/KubeStock-Terraform-Plan-Policy'
+          aws-region: ${{ vars.AWS_REGION }}
+
 
       - name: Terraform Plan (prod)
         id: plan
         working-directory: terraform/prod
-        env:
-          AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: terraform plan -no-color > plan.txt
       - name: Comment Terraform Plan on PR
         uses: actions/github-script@v7
