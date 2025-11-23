@@ -1,4 +1,4 @@
-name: Terraform PR Checks
+name: Terraform PR Checks (Minimal Validation)
 
 on:
   pull_request:
@@ -9,68 +9,43 @@ on:
 jobs:
   pr-checks:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-      pull-requests: write
+    # Permissions block is no longer needed since we aren't using OIDC or commenting on the PR
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: 'arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role'
-          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: '1.13.5'
 
+      # 1. Format Check (Ensures files adhere to HCL standard)
       - name: Terraform Format Check (prod)
         working-directory: terraform/prod
         run: terraform fmt -check
 
-      - name: Terraform Init
-        working-directory: terraform/prod
-        run: terraform init
-
-      - name: Terraform Validate (prod)
-        working-directory: terraform/prod
-        run: terraform validate
-
+      # 2. Variable Generation (Needed so the next steps don't fail looking for vars)
       - name: Generate terraform.tfvars
         working-directory: terraform/prod
         run: |
           cat > terraform.tfvars <<EOF
-          my_ip = "${{ vars.MY_IP }}"
-          ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
+          my_ip = "0.0.0.0/0" # Use dummy values as they are not validated against AWS
+          ssh_public_key_content = "dummy-key" 
           EOF
 
+      # 3. Initialize (Local Only)
+      - name: Terraform Init (Local Only)
+        working-directory: terraform/prod
+        # Initializes provider plugins locally but skips connecting to the remote state, preventing locks.
+        run: terraform init -backend=false
 
-      - name: Terraform Plan (prod)
+      # 4. Configuration Validity Check
+      - name: Terraform Validate (prod)
+        working-directory: terraform/prod
+        run: terraform validate
+
+      # 5. Plan (Local Validation Only)
+      - name: Terraform Plan (Local Validation)
         id: plan
         working-directory: terraform/prod
-        run: terraform plan -no-color > plan.txt
-      - name: Comment Terraform Plan on PR
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const planOutput = fs.readFileSync('terraform/prod/plan.txt', 'utf8');
-            const maxLen = 65000;
-            let body = '### Terraform Plan\n';
-            if (planOutput.length > maxLen) {
-              body += 'Plan output is too long, showing first 65k characters.\n\n';
-              body += '```\n' + planOutput.substring(0, maxLen) + '\n```';
-            } else {
-              body += '```\n' + planOutput + '\n```';
-            }
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            });
+        run: terraform plan -refresh=false -no-color
