@@ -17,6 +17,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: 'arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role'
+          aws-region: ${{ vars.AWS_REGION }}
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -26,19 +32,13 @@ jobs:
         working-directory: terraform/prod
         run: terraform fmt -check
 
-      - name: Terraform Init (prod) - no backend
+      - name: Terraform Init
         working-directory: terraform/prod
-        run: terraform init -backend=false
+        run: terraform init
 
       - name: Terraform Validate (prod)
         working-directory: terraform/prod
         run: terraform validate
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: 'arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role'
-          aws-region: ${{ vars.AWS_REGION }}
 
 
       - name: Terraform Plan (prod)
