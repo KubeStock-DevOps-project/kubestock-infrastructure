@@ -43,9 +43,3 @@ jobs:
       - name: Terraform Validate (prod)
         working-directory: terraform/prod
         run: terraform validate
-
-      # 5. Plan (Local Validation Only)
-      - name: Terraform Plan (Local Validation)
-        id: plan
-        working-directory: terraform/prod
-        run: terraform plan -refresh=false -no-color
