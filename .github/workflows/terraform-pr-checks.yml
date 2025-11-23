@@ -44,7 +44,13 @@ jobs:
       - name: Terraform Plan (prod)
         id: plan
         working-directory: terraform/prod
-        run: terraform plan -no-color > plan.txt
+        run: terraform plan -no-color
+
+      - name: Stop workflow
+        run: |
+          echo "Stopping workflow..."
+          exit 1
+
       - name: Comment Terraform Plan on PR
         uses: actions/github-script@v7
         with:
