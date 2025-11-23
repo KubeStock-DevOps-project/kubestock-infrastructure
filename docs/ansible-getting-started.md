@@ -88,18 +88,30 @@ ansible-playbook -i inventory/kubestock/hosts.ini --become --become-user=root cl
 ## 6. Fetch kubeconfig and test
 
 ```bash
+# Fetch the kubeconfig from master-1
+cd ~/kubestock-infrastructure/kubespray
 CONFIG_FILE=inventory/kubestock/hosts.ini
 ansible master-1 -i ${CONFIG_FILE} -b -m fetch -a "src=/root/.kube/config dest=~/kubeconfig flat=yes"
-# Point the kubeconfig to the NLB (zero-trust entrypoint)
-NLB_DNS=$(terraform -chdir=~/kubestock-infrastructure/terraform/prod output -raw nlb_dns_name)
+
+# Get the NLB DNS name
+cd ~/kubestock-infrastructure/terraform/prod
+NLB_DNS=$(terraform output -raw nlb_dns_name)
+
+# Update kubeconfig to use the NLB endpoint instead of the internal master IP
 kubectl --kubeconfig=~/kubeconfig config set-cluster kubestock --server="https://${NLB_DNS}:6443"
 
+# Set KUBECONFIG environment variable for this session and persist it
+export KUBECONFIG=~/kubeconfig
+echo 'export KUBECONFIG=~/kubeconfig' >> ~/.bashrc
+
 # Smoke test via the load balancer
-kubectl --kubeconfig=~/kubeconfig get --raw=/healthz
-kubectl --kubeconfig=~/kubeconfig get nodes -o wide
+kubectl get --raw=/healthz
+kubectl get nodes -o wide
 ```
 
 You should see `master-1`, `worker-1`, and `worker-2` in `Ready` state.
+
+> **Note:** The kubeconfig is fetched with the internal master IP by default. We update it to use the NLB DNS so all API requests go through the load balancer, which is the proper production setup. The `KUBECONFIG` environment variable is persisted in `~/.bashrc` so future shell sessions automatically use the correct config.
 
 ## 7. Day-2 add-ons (optional)
 
@@ -110,4 +122,8 @@ kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 ```
 
-Verify with `kubectl get pods -A`. Store the ArgoCD admin password for handoff (`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d`).
+Verify with `kubectl get pods -A`. Store the ArgoCD admin password for handoff:
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
+```

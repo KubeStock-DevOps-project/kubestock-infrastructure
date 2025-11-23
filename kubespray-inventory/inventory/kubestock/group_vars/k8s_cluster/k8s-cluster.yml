@@ -1,0 +1,10 @@
+---
+cluster_name: kubestock
+apiserver_loadbalancer_domain_name: "kubestock-nlb-api-9f36c11b9d916d59.elb.ap-south-1.amazonaws.com"
+loadbalancer_apiserver_port: 6443
+supplementary_addresses_in_ssl_keys:
+  - "kubestock-nlb-api-9f36c11b9d916d59.elb.ap-south-1.amazonaws.com"
+  - "10.0.10.21"
+kube_network_plugin: calico
+container_manager: containerd
+kube_proxy_mode: iptables
