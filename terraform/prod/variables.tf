@@ -35,7 +35,7 @@ variable "availability_zones" {
 }
 
 variable "primary_az" {
-  description = "Primary availability zone for single-AZ resources (NAT Gateway, Control Plane, RDS)"
+  description = "Primary availability zone for single-AZ resources (NAT Gateway, Control Plane)"
   type        = string
   default     = "ap-south-1a"
 }
@@ -76,40 +76,6 @@ variable "ssh_public_key_content" {
   type        = string
   sensitive   = true
 }
-
-# ========================================
-# DATABASE (RDS)
-# ========================================
-
-# variable "rds_user" {
-#   description = "The username for the RDS PostgreSQL database"
-#   type        = string
-#   default     = "kubestock"
-# }
-
-# variable "rds_password" {
-#   description = "The password for the RDS PostgreSQL database"
-#   type        = string
-#   sensitive   = true
-# }
-
-# variable "rds_instance_class" {
-#   description = "RDS instance class"
-#   type        = string
-#   default     = "db.t4g.medium"
-# }
-
-# variable "rds_allocated_storage" {
-#   description = "Initial allocated storage for RDS (GB)"
-#   type        = number
-#   default     = 20
-# }
-
-# variable "rds_max_allocated_storage" {
-#   description = "Maximum allocated storage for RDS autoscaling (GB)"
-#   type        = number
-#   default     = 100
-# }
 
 # ========================================
 # COMPUTE

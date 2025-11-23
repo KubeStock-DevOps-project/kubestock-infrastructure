@@ -1,4 +1,4 @@
-name: Terraform PR Checks
+name: Terraform PR Checks (Minimal Validation)
 
 on:
   pull_request:
@@ -9,6 +9,7 @@ on:
 jobs:
   pr-checks:
     runs-on: ubuntu-latest
+    # Permissions block is no longer needed since we aren't using OIDC or commenting on the PR
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,14 +19,27 @@ jobs:
         with:
           terraform_version: '1.13.5'
 
+      # 1. Format Check (Ensures files adhere to HCL standard)
       - name: Terraform Format Check (prod)
         working-directory: terraform/prod
         run: terraform fmt -check
 
-      - name: Terraform Init (prod) - no backend
+      # 2. Variable Generation (Needed so the next steps don't fail looking for vars)
+      - name: Generate terraform.tfvars
         working-directory: terraform/prod
+        run: |
+          cat > terraform.tfvars <<EOF
+          my_ip = "0.0.0.0/0" # Use dummy values as they are not validated against AWS
+          ssh_public_key_content = "dummy-key" 
+          EOF
+
+      # 3. Initialize (Local Only)
+      - name: Terraform Init (Local Only)
+        working-directory: terraform/prod
+        # Initializes provider plugins locally but skips connecting to the remote state, preventing locks.
         run: terraform init -backend=false
 
+      # 4. Configuration Validity Check
       - name: Terraform Validate (prod)
         working-directory: terraform/prod
         run: terraform validate

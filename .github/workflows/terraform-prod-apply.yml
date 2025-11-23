@@ -1,4 +1,5 @@
-name: Terraform Prod Deploy
+
+name: Terraform Production Deployment
 
 on:
   push:
@@ -7,14 +8,23 @@ on:
       - 'terraform/**'
 
 jobs:
-  deploy-prod:
+  plan:
     runs-on: ubuntu-latest
-    concurrency:
-      group: terraform-prod
-      cancel-in-progress: false
+    outputs:
+      plan_file: ${{ steps.plan.outputs.plan_file }}
+    permissions:
+      id-token: write # Required for AWS OIDC
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Configure AWS Credentials via OIDC
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: 'arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role'
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -31,33 +41,64 @@ jobs:
           cat > terraform.tfvars <<EOF
           my_ip = "${{ vars.MY_IP }}"
           ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
-          rds_password = "${{ secrets.RDS_PASSWORD }}"
           EOF
 
       - name: Terraform Init (prod)
         working-directory: terraform/prod
-        env:
-          AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: terraform init
 
       - name: Terraform Validate (prod)
         working-directory: terraform/prod
         run: terraform validate
 
-      - name: Terraform Plan (prod)
+      - name: Terraform Plan and Save
+        id: plan
         working-directory: terraform/prod
-        env:
-          AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-        run: terraform plan -out=tfplan
+        run: terraform plan -input=false -out=tfplan -no-color | tee plan_output.txt
 
-      - name: Terraform Apply (prod)
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-plan
+          path: terraform/prod/tfplan
+
+  approval:
+    runs-on: ubuntu-latest
+    needs: [plan]
+    environment:
+      name: production
+    steps:
+      - name: Manual Approval Step
+        run: echo "Waiting for manual approval to deploy to production environment."
+
+  apply:
+    runs-on: ubuntu-latest
+    needs: [approval]
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: 'arn:aws:iam::478468757808:role/KubeStock-Terraform-Apply-Role'
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-plan
+          path: terraform/prod/
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.13.5'
+
+      - name: Terraform Apply
         working-directory: terraform/prod
-        env:
-          AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
         run: terraform apply -auto-approve tfplan
