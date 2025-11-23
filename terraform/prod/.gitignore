@@ -25,6 +25,7 @@ terraform.rc
 *.swp
 *.swo
 *~
+plan.txt
 
 # OS
 .DS_Store
