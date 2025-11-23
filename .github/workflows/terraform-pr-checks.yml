@@ -37,7 +37,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: 'arn:aws:iam::478468757808:policy/KubeStock-Terraform-Plan-Policy'
+          role-to-assume: 'arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role'
           aws-region: ${{ vars.AWS_REGION }}
 
 
