@@ -42,8 +42,8 @@ resource "aws_instance" "bastion" {
   }
 
   tags = {
-    Name    = "kubestock-bastion"
-    Role    = "bastion"
+    Name = "kubestock-bastion"
+    Role = "bastion"
   }
 }
 
