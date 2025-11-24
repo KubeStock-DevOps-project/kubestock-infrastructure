@@ -62,18 +62,9 @@ jobs:
           name: deployment-plan
           path: terraform/prod/tfplan
 
-  approval:
-    runs-on: ubuntu-latest
-    needs: [plan]
-    environment:
-      name: production
-    steps:
-      - name: Manual Approval Step
-        run: echo "Waiting for manual approval to deploy to production environment."
-
   apply:
     runs-on: ubuntu-latest
-    needs: [approval]
+    needs: [plan]
     environment: production
     permissions:
       id-token: write
