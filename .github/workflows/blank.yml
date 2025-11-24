@@ -1,0 +1,102 @@
+name: Terraform Production Deployment
+
+on:
+  workflow_dispatch:  # <-- manual trigger
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      plan_file: ${{ steps.plan.outputs.plan_file }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: 'arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role'
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.13.5'
+
+      - name: Terraform Format Check (prod)
+        working-directory: terraform/prod
+        run: terraform fmt -check
+
+      - name: Generate terraform.tfvars
+        working-directory: terraform/prod
+        run: |
+          cat > terraform.tfvars <<EOF
+          my_ip = "${{ vars.MY_IP }}"
+          ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
+          EOF
+
+      - name: Upload tfvars
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfvars
+          path: terraform/prod/terraform.tfvars
+
+      - name: Terraform Init (prod)
+        working-directory: terraform/prod
+        run: terraform init
+
+      - name: Terraform Validate (prod)
+        working-directory: terraform/prod
+        run: terraform validate
+
+      - name: Terraform Plan and Save
+        id: plan
+        working-directory: terraform/prod
+        run: terraform plan -input=false -out=tfplan -no-color | tee plan_output.txt
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-plan
+          path: terraform/prod/tfplan
+
+  apply:
+    runs-on: ubuntu-latest
+    needs: [plan]
+    environment: production  # <-- approval required here
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: 'arn:aws:iam::478468757808:role/KubeStock-Terraform-Apply-Role'
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-plan
+          path: terraform/prod/
+
+      - name: Download tfvars artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfvars
+          path: terraform/prod/
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.13.5'
+
+      - name: Terraform Apply
+        working-directory: terraform/prod
+        run: terraform apply -auto-approve tfplan
