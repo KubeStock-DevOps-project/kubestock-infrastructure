@@ -1,148 +1,149 @@
-
 name: Terraform Production Deployment
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'terraform/**'
+    push:
+        branches: [main]
+        paths:
+            - "terraform/**"
 
 jobs:
-  plan:
-    runs-on: ubuntu-latest
-    outputs:
-      plan_file: ${{ steps.plan.outputs.plan_file }}
-    permissions:
-      id-token: write # Required for AWS OIDC
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    plan:
+        runs-on: ubuntu-latest
+        outputs:
+            plan_file: ${{ steps.plan.outputs.plan_file }}
+        permissions:
+            id-token: write # Required for AWS OIDC
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: '1.13.5'
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: "1.13.5"
 
-      - name: Terraform Format Check (prod)
-        working-directory: terraform/prod
-        run: terraform fmt -check
+            - name: Terraform Format Check (prod)
+              working-directory: terraform/prod
+              run: terraform fmt -check
 
-      # Configure AWS Credentials via OIDC
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: 'arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role'
-          aws-region: ${{ vars.AWS_REGION }}
+            # Configure AWS Credentials via OIDC
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: "arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role"
+                  aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Terraform Init (prod)
-        working-directory: terraform/prod
-        run: terraform init
+            - name: Terraform Init (prod)
+              working-directory: terraform/prod
+              run: terraform init
 
-      - name: Terraform Validate (prod)
-        working-directory: terraform/prod
-        run: terraform validate
+            - name: Terraform Validate (prod)
+              working-directory: terraform/prod
+              run: terraform validate
 
-      - name: Generate terraform.tfvars
-        working-directory: terraform/prod
-        run: |
-          cat > terraform.tfvars <<EOF
-          my_ip = "${{ vars.MY_IP }}"
-          ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
-          EOF
+            - name: Generate terraform.tfvars
+              working-directory: terraform/prod
+              run: |
+                  cat > terraform.tfvars <<EOF
+                  my_ip = "${{ vars.MY_IP }}"
+                  ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
+                  EOF
 
-      - name: Terraform Plan and Save
-        id: plan
-        working-directory: terraform/prod
-        run: terraform plan -input=false -out=tfplan -no-color | tee plan_output.txt
+            - name: Terraform Plan and Save
+              id: plan
+              working-directory: terraform/prod
+              run: terraform plan -input=false -out=tfplan -no-color | tee plan_output.txt
 
-      - name: Upload Plan Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: deployment-plan
-          path: terraform/prod/tfplan
+            - name: Upload Plan Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: deployment-plan
+                  path: terraform/prod/tfplan
 
-      - name: Upload Plan Output for Review
-        uses: actions/upload-artifact@v4
-        with:
-          name: plan-output
-          path: terraform/prod/plan_output.txt
+            - name: Upload Plan Output for Review
+              uses: actions/upload-artifact@v4
+              with:
+                  name: plan-output
+                  path: terraform/prod/plan_output.txt
 
-      - name: Post Plan Summary
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const planOutput = fs.readFileSync('terraform/prod/plan_output.txt', 'utf8');
-            const truncatedPlan = planOutput.length > 65000 ? 
-              planOutput.substring(0, 65000) + '\n\n... (truncated)' : 
-              planOutput;
-            
-            await github.rest.repos.createCommitComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.sha,
-              body: `## Terraform Plan Output\n\n<details><summary>Click to expand plan</summary>\n\n\`\`\`terraform\n${truncatedPlan}\n\`\`\`\n\n</details>\n\n**Waiting for manual approval in production environment.**`
-            });
+            - name: Publish Plan to Job Summary
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const fs = require('fs');
+                      const planOutput = fs.readFileSync('terraform/prod/plan_output.txt', 'utf8');
+                      const maxLen = 65000;
+                      const truncatedPlan = planOutput.length > maxLen ? 
+                        planOutput.substring(0, maxLen) + '\n\n... (truncated)' : 
+                        planOutput;
 
-      # Clean up sensitive files immediately after upload
-      - name: Clean up sensitive files
-        if: always()
-        working-directory: terraform/prod
-        run: |
-          rm -f terraform.tfvars
-          rm -f tfplan
-          rm -f plan_output.txt
+                      await core.summary
+                        .addHeading('Terraform Plan Results')
+                        .addRaw('__Waiting for manual approval in production environment.__')
+                        .addRaw('\n\n<details><summary>Click to expand full plan output</summary>\n\n')
+                        .addCodeBlock(truncatedPlan, 'terraform')
+                        .addRaw('\n</details>')
+                        .write();
 
-  apply:
-    runs-on: ubuntu-latest
-    needs: [plan]
-    environment: production
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+            # Clean up sensitive files immediately after upload
+            - name: Clean up sensitive files
+              if: always()
+              working-directory: terraform/prod
+              run: |
+                  rm -f terraform.tfvars
+                  rm -f tfplan
+                  rm -f plan_output.txt
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: '1.13.5'
+    apply:
+        runs-on: ubuntu-latest
+        needs: [plan]
+        environment: production
+        permissions:
+            id-token: write
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      # Configure AWS Credentials via OIDC
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: 'arn:aws:iam::478468757808:role/KubeStock-Terraform-Apply-Role'
-          aws-region: ${{ vars.AWS_REGION }}
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: "1.13.5"
 
-      - name: Terraform Init (prod)
-        working-directory: terraform/prod
-        run: terraform init
+            # Configure AWS Credentials via OIDC
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: "arn:aws:iam::478468757808:role/KubeStock-Terraform-Apply-Role"
+                  aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Download Plan Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: deployment-plan
-          path: terraform/prod/
+            - name: Terraform Init (prod)
+              working-directory: terraform/prod
+              run: terraform init
 
-      - name: Generate terraform.tfvars
-        working-directory: terraform/prod
-        run: |
-          cat > terraform.tfvars <<EOF
-          my_ip = "${{ vars.MY_IP }}"
-          ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
-          EOF
+            - name: Download Plan Artifact
+              uses: actions/download-artifact@v4
+              with:
+                  name: deployment-plan
+                  path: terraform/prod/
 
-      - name: Terraform Apply
-        working-directory: terraform/prod
-        run: terraform apply -auto-approve tfplan
+            - name: Generate terraform.tfvars
+              working-directory: terraform/prod
+              run: |
+                  cat > terraform.tfvars <<EOF
+                  my_ip = "${{ vars.MY_IP }}"
+                  ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
+                  EOF
 
-      # Clean up sensitive files immediately after apply
-      - name: Clean up sensitive files
-        if: always()
-        working-directory: terraform/prod
-        run: |
-          rm -f terraform.tfvars
-          rm -f tfplan
+            - name: Terraform Apply
+              working-directory: terraform/prod
+              run: terraform apply -auto-approve tfplan
+
+            # Clean up sensitive files immediately after apply
+            - name: Clean up sensitive files
+              if: always()
+              working-directory: terraform/prod
+              run: |
+                  rm -f terraform.tfvars
+                  rm -f tfplan
