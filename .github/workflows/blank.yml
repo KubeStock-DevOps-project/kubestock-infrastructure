@@ -57,18 +57,6 @@ jobs:
           name: deployment-plan
           path: terraform/prod/tfplan
 
-      - name: Upload tfvars
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfvars
-          path: terraform/prod/terraform.tfvars
-
-      - name: Upload Lock File
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-lock
-          path: terraform/prod/terraform.lock.hcl
-
 
   apply:
     runs-on: ubuntu-latest
@@ -93,23 +81,23 @@ jobs:
           name: deployment-plan
           path: terraform/prod/
 
-      - name: Download tfvars artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: tfvars
-          path: terraform/prod/
-
-      - name: Download Lock File
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-lock
-          path: terraform/prod/
+      - name: Generate terraform.tfvars
+        working-directory: terraform/prod
+        run: |
+          cat > terraform.tfvars <<EOF
+          my_ip = "${{ vars.MY_IP }}"
+          ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
+          EOF
 
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: '1.13.5'
+
+      - name: Terraform Init (prod)
+        working-directory: terraform/prod
+        run: terraform init
 
       - name: Terraform Apply
         working-directory: terraform/prod
