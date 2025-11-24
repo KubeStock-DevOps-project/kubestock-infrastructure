@@ -38,12 +38,6 @@ jobs:
           ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
           EOF
 
-      - name: Upload tfvars
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfvars
-          path: terraform/prod/terraform.tfvars
-
       - name: Terraform Init (prod)
         working-directory: terraform/prod
         run: terraform init
@@ -62,6 +56,19 @@ jobs:
         with:
           name: deployment-plan
           path: terraform/prod/tfplan
+
+      - name: Upload tfvars
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfvars
+          path: terraform/prod/terraform.tfvars
+
+      - name: Upload Lock File
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-lock
+          path: terraform/prod/terraform.lock.hcl
+
 
   apply:
     runs-on: ubuntu-latest
@@ -91,6 +98,13 @@ jobs:
         with:
           name: tfvars
           path: terraform/prod/
+
+      - name: Download Lock File
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-lock
+          path: terraform/prod/
+
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
