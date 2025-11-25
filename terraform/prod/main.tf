@@ -36,6 +36,7 @@ locals {
     "ms-product-catalog",
     "ms-inventory",
     "ms-supplier",
-    "ms-order-management"
+    "ms-order-management",
+    "ms-test"
   ]
 }
