@@ -1,4 +1,4 @@
-name: Terraform PR Checks (Minimal Validation)
+name: Terraform PR Speculative Plan
 
 on:
   pull_request:
@@ -7,9 +7,12 @@ on:
       - 'terraform/**'
 
 jobs:
-  pr-checks:
+  pr-plan:
     runs-on: ubuntu-latest
-    # Permissions block is no longer needed since we aren't using OIDC or commenting on the PR
+    permissions:
+      id-token: write # Required for AWS OIDC
+      contents: read
+      pull-requests: write # Required to post comments/summaries
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,27 +22,69 @@ jobs:
         with:
           terraform_version: '1.13.5'
 
-      # 1. Format Check (Ensures files adhere to HCL standard)
-      - name: Terraform Format Check (prod)
+      # 1. Configure AWS Credentials (Read-Only/Plan Role)
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Use your PLAN role here
+          role-to-assume: 'arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role'
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # 2. Terraform Format
+      - name: Terraform Format
         working-directory: terraform/prod
         run: terraform fmt -check
 
-      # 2. Variable Generation (Needed so the next steps don't fail looking for vars)
+      # 3. Generate tfvars (Securely)
       - name: Generate terraform.tfvars
         working-directory: terraform/prod
         run: |
           cat > terraform.tfvars <<EOF
-          my_ip = "0.0.0.0/0" # Use dummy values as they are not validated against AWS
-          ssh_public_key_content = "dummy-key" 
+          my_ip = "${{ vars.MY_IP }}"
+          ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
           EOF
 
-      # 3. Initialize (Local Only)
-      - name: Terraform Init (Local Only)
+      # 4. Init WITH Backend (Standard Init)
+      - name: Terraform Init
         working-directory: terraform/prod
-        # Initializes provider plugins locally but skips connecting to the remote state, preventing locks.
-        run: terraform init -backend=false
+        run: terraform init
+        # We DO connect to S3 here so we can read the current state.
 
-      # 4. Configuration Validity Check
-      - name: Terraform Validate (prod)
+      # 5. Validate
+      - name: Terraform Validate
         working-directory: terraform/prod
         run: terraform validate
+
+      # 6. Speculative Plan (The Magic Step)
+      - name: Terraform Plan (Speculative)
+        id: plan
+        working-directory: terraform/prod
+        run: terraform plan -lock=false -no-color | tee plan_output.txt
+
+      # 7. Publish Plan to Job Summary (Easy to read)
+      - name: Publish Plan to Job Summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('terraform/prod/plan_output.txt', 'utf8');
+            const maxLen = 65000;
+            const truncatedPlan = planOutput.length > maxLen ? 
+              planOutput.substring(0, maxLen) + '\n\n... (truncated)' : 
+              planOutput;
+            
+            await core.summary
+              .addHeading('Terraform Speculative Plan')
+              .addRaw('This plan was run with `-lock=false`. It predicts changes for this PR.')
+              .addRaw('\n\n<details><summary>Click to expand full plan output</summary>\n\n')
+              .addCodeBlock(truncatedPlan, 'terraform')
+              .addRaw('\n</details>')
+              .write();
+
+      # 8. Cleanup
+      - name: Clean up sensitive files
+        if: always()
+        working-directory: terraform/prod
+        run: |
+          rm -f terraform.tfvars
+          rm -f plan_output.txt
