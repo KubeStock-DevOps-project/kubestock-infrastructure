@@ -233,6 +233,12 @@ output "ecr_role_arn" {
   value       = aws_iam_role.github_actions_ecr.arn
 }
 
+
+output "github_actions_role_name" {
+  description = "Name of the IAM role for GitHub Actions"
+  value       = aws_iam_role.github_actions_ecr.name
+}
+
 output "ecr_repository_urls" {
   description = "ECR repository URLs for microservices"
   value = {
