@@ -335,6 +335,30 @@ These permissions allow Terraform to create, modify, and delete AWS resources.
 }
 ```
 
+## 3. Policies for terraform outputs.
+### Custom Policy: `KubeStock-Terraform-Outputs-Policy`
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3BackendReadAccess",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetObject",
+        "s3:GetObjectVersion"
+      ],
+      "Resource": [
+        "arn:aws:s3:::kubestock-terraform-state",
+        "arn:aws:s3:::kubestock-terraform-state/*"
+      ]
+    }
+  ]
+}
+```
+
 ---
 
 ## 3. Additional Recommendations
