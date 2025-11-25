@@ -24,3 +24,17 @@ provider "aws" {
     }
   }
 }
+
+# ========================================
+# LOCAL VARIABLES
+# ========================================
+locals {
+  microservices = [
+    "ms-product-catalog",
+    "ms-inventory",
+    "ms-supplier",
+    "ms-order-management",
+    "ms-test"
+  ]
+}
+
