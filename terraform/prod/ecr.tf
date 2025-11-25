@@ -50,21 +50,3 @@ resource "aws_ecr_lifecycle_policy" "microservices" {
     ]
   })
 }
-
-# ========================================
-# OUTPUTS
-# ========================================
-
-output "ecr_repository_urls" {
-  description = "ECR repository URLs for microservices"
-  value = {
-    for k, v in aws_ecr_repository.microservices : k => v.repository_url
-  }
-}
-
-output "ecr_repository_arns" {
-  description = "ECR repository ARNs for microservices"
-  value = {
-    for k, v in aws_ecr_repository.microservices : k => v.arn
-  }
-}

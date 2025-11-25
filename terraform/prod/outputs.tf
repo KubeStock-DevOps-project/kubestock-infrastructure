@@ -228,13 +228,21 @@ output "cluster_info" {
 # ECR
 # ========================================
 
-output "ecr_repository_urls" {
-  description = "URLs of the ECR repositories for microservices"
-  value       = [for repo in aws_ecr_repository.microservices : repo.repository_url]
-}
-
 output "ecr_role_arn" {
   description = "ARN of the IAM role for GitHub Actions to access ECR"
   value       = aws_iam_role.github_actions_ecr.arn
 }
 
+output "ecr_repository_urls" {
+  description = "ECR repository URLs for microservices"
+  value = {
+    for k, v in aws_ecr_repository.microservices : k => v.repository_url
+  }
+}
+
+output "ecr_repository_arns" {
+  description = "ECR repository ARNs for microservices"
+  value = {
+    for k, v in aws_ecr_repository.microservices : k => v.arn
+  }
+}
