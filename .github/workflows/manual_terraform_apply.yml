@@ -1,0 +1,163 @@
+name: Terraform Manual Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        default: "prod"
+        required: true
+        type: choice
+        options:
+          - prod
+      approve_apply:
+        description: "Approve apply? (yes/no)"
+        default: "no"
+        required: true
+        type: choice
+        options:
+          - yes
+          - no
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      approved: ${{ steps.check_approval.outputs.approved }}
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.13.5"
+
+      - name: Terraform Format Check (prod)
+        working-directory: terraform/prod
+        run: terraform fmt -check
+
+      - name: Configure AWS Credentials (Plan role)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role"
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: terraform/prod
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: terraform/prod
+        run: terraform validate
+
+      - name: Generate terraform.tfvars
+        working-directory: terraform/prod
+        run: |
+          cat > terraform.tfvars <<EOF
+          my_ip = "${{ vars.MY_IP }}"
+          ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
+          EOF
+
+      - name: Terraform Plan and Save
+        id: plan
+        working-directory: terraform/prod
+        run: terraform plan -input=false -out=tfplan -no-color | tee plan_output.txt
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-plan
+          path: terraform/prod/tfplan
+
+      - name: Upload Plan Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: plan-output
+          path: terraform/prod/plan_output.txt
+
+      - name: Publish Plan to Summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('terraform/prod/plan_output.txt', 'utf8');
+            await core.summary
+              .addHeading('Terraform Manual Deployment Plan')
+              .addRaw(`Environment: **${process.env.INPUT_ENVIRONMENT}**`)
+              .addRaw('\n\nPlan generated. Apply step will only run if approved.')
+              .addCodeBlock(planOutput.substring(0, 65000), 'terraform')
+              .write();
+
+      - name: Cleanup sensitive files
+        if: always()
+        working-directory: terraform/prod
+        run: |
+          rm -f terraform.tfvars
+          rm -f tfplan
+          rm -f plan_output.txt
+
+      - name: Check Approval Input
+        id: check_approval
+        run: |
+          if [ "${{ github.event.inputs.approve_apply }}" = "yes" ]; then
+            echo "approved=true" >> $GITHUB_OUTPUT
+          else
+            echo "approved=false" >> $GITHUB_OUTPUT
+          fi
+
+  apply:
+    needs: plan
+    if: needs.plan.outputs.approved == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.13.5"
+
+      - name: Configure AWS Credentials (Apply role)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "arn:aws:iam::478468757808:role/KubeStock-Terraform-Apply-Role"
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: terraform/prod
+        run: terraform init
+
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-plan
+          path: terraform/prod/
+
+      - name: Regenerate terraform.tfvars
+        working-directory: terraform/prod
+        run: |
+          cat > terraform.tfvars <<EOF
+          my_ip = "${{ vars.MY_IP }}"
+          ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
+          EOF
+
+      - name: Terraform Apply
+        working-directory: terraform/prod
+        run: terraform apply -auto-approve tfplan
+
+      - name: Cleanup sensitive files
+        if: always()
+        working-directory: terraform/prod
+        run: |
+          rm -f terraform.tfvars
+          rm -f tfplan
