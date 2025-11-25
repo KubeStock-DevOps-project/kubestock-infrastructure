@@ -98,7 +98,6 @@ jobs:
     apply:
         runs-on: ubuntu-latest
         needs: [plan]
-        environment: production
         permissions:
             id-token: write
             contents: read
