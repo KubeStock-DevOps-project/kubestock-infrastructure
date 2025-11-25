@@ -105,17 +105,3 @@ resource "aws_iam_role_policy_attachment" "github_actions_ecr" {
   role       = aws_iam_role.github_actions_ecr.name
   policy_arn = aws_iam_policy.github_actions_ecr.arn
 }
-
-# ========================================
-# OUTPUTS
-# ========================================
-
-output "github_actions_role_arn" {
-  description = "ARN of the IAM role for GitHub Actions"
-  value       = aws_iam_role.github_actions_ecr.arn
-}
-
-output "github_actions_role_name" {
-  description = "Name of the IAM role for GitHub Actions"
-  value       = aws_iam_role.github_actions_ecr.name
-}
