@@ -20,94 +20,87 @@ These permissions allow Terraform to read existing infrastructure state and vali
 
 ```json
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "EC2ReadOnly",
-            "Effect": "Allow",
-            "Action": [
-                "ec2:Describe*",
-                "ec2:Get*",
-                "ec2:List*"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Sid": "VPCReadOnly",
-            "Effect": "Allow",
-            "Action": [
-                "ec2:DescribeVpcs",
-                "ec2:DescribeSubnets",
-                "ec2:DescribeRouteTables",
-                "ec2:DescribeInternetGateways",
-                "ec2:DescribeNatGateways",
-                "ec2:DescribeAddresses",
-                "ec2:DescribeSecurityGroups",
-                "ec2:DescribeSecurityGroupRules",
-                "ec2:DescribeNetworkAcls",
-                "ec2:DescribeNetworkInterfaces"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Sid": "ELBReadOnly",
-            "Effect": "Allow",
-            "Action": [
-                "elasticloadbalancing:Describe*",
-                "elasticloadbalancing:Get*"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Sid": "IAMReadOnly",
-            "Effect": "Allow",
-            "Action": [
-                "iam:GetRole",
-                "iam:GetRolePolicy",
-                "iam:GetPolicy",
-                "iam:GetPolicyVersion",
-                "iam:GetInstanceProfile",
-                "iam:ListAttachedRolePolicies",
-                "iam:ListRolePolicies",
-                "iam:ListInstanceProfiles",
-                "iam:ListInstanceProfilesForRole",
-                "iam:ListPolicyVersions"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Sid": "AutoScalingReadOnly",
-            "Effect": "Allow",
-            "Action": [
-                "autoscaling:Describe*"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Sid": "S3BackendAccess",
-            "Effect": "Allow",
-            "Action": [
-                "s3:ListBucket",
-                "s3:GetObject",
-                "s3:GetObjectVersion",
-                "s3:PutObject",
-                "s3:DeleteObject"
-            ],
-            "Resource": [
-                "arn:aws:s3:::kubestock-terraform-state",
-                "arn:aws:s3:::kubestock-terraform-state/*"
-            ]
-        },
-        {
-            "Sid": "DynamoDBStateLock",
-            "Effect": "Allow",
-            "Action": [
-                "dynamodb:GetItem",
-                "dynamodb:DescribeTable"
-            ],
-            "Resource": "arn:aws:dynamodb:*:*:table/terraform-state-lock"
-        }
-    ]
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "EC2ReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"ec2:Describe*",
+				"ec2:Get*",
+				"ec2:List*"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "VPCReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"ec2:DescribeVpcs",
+				"ec2:DescribeSubnets",
+				"ec2:DescribeRouteTables",
+				"ec2:DescribeInternetGateways",
+				"ec2:DescribeNatGateways",
+				"ec2:DescribeAddresses",
+				"ec2:DescribeSecurityGroups",
+				"ec2:DescribeSecurityGroupRules",
+				"ec2:DescribeNetworkAcls",
+				"ec2:DescribeNetworkInterfaces"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "ELBReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"elasticloadbalancing:Describe*",
+				"elasticloadbalancing:Get*"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "IAMReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"iam:GetRole",
+				"iam:GetRolePolicy",
+				"iam:GetPolicy",
+				"iam:GetPolicyVersion",
+				"iam:GetInstanceProfile",
+				"iam:ListAttachedRolePolicies",
+				"iam:ListRolePolicies",
+				"iam:ListInstanceProfiles",
+				"iam:ListInstanceProfilesForRole",
+				"iam:ListPolicyVersions",
+				"iam:ListOpenIDConnectProviders",  
+        "iam:GetOpenIDConnectProvider"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "AutoScalingReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"autoscaling:Describe*"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "S3BackendAccess",
+			"Effect": "Allow",
+			"Action": [
+				"s3:ListBucket",
+				"s3:GetObject",
+				"s3:GetObjectVersion",
+				"s3:PutObject",
+				"s3:DeleteObject"
+			],
+			"Resource": [
+				"arn:aws:s3:::kubestock-terraform-state",
+				"arn:aws:s3:::kubestock-terraform-state/*"
+			]
+		}
+	]
 }
 ```
 
@@ -249,6 +242,15 @@ These permissions allow Terraform to create, modify, and delete AWS resources.
         "arn:aws:iam::*:policy/kubestock-*"
       ]
     },
+    {
+			"Sid": "IAMOIDCDiscovery",
+			"Effect": "Allow",
+			"Action": [
+				"iam:ListOpenIDConnectProviders",
+				"iam:GetOpenIDConnectProvider"
+			],
+			"Resource": "*"
+		},
     {
       "Sid": "IAMInstanceProfileManagement",
       "Effect": "Allow",
