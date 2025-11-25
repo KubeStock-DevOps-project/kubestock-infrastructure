@@ -32,7 +32,6 @@ provider "aws" {
 # ========================================
 locals {
   microservices = [
-    "ms-user-management",
     "ms-product-catalog",
     "ms-inventory",
     "ms-supplier",
