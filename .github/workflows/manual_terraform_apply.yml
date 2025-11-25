@@ -25,7 +25,7 @@ jobs:
         working-directory: terraform/prod
         run: terraform fmt -check
 
-      - name: Configure AWS Credentials (Plan)
+      - name: Configure AWS Credentials (Plan Role)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: "arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role"
@@ -57,11 +57,32 @@ jobs:
           name: deployment-plan
           path: terraform/prod/tfplan
 
-      - name: Upload Plan Output
+      - name: Upload Plan Output File
         uses: actions/upload-artifact@v4
         with:
           name: plan-output
           path: terraform/prod/plan_output.txt
+
+      # ✅ PRINT FULL PLAN OUTPUT IN SUMMARY
+      - name: Publish Plan to Summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('terraform/prod/plan_output.txt', 'utf8');
+
+            const maxLen = 65000;
+            const truncated = planOutput.length > maxLen
+              ? planOutput.substring(0, maxLen) + "\n\n... (truncated)"
+              : planOutput;
+
+            await core.summary
+              .addHeading('Terraform Plan (Production Manual Deployment)')
+              .addRaw('This is the **Terraform plan output**. Review carefully before approving the production apply.')
+              .addRaw('\n\n<details><summary>Click to expand full plan</summary>\n\n')
+              .addCodeBlock(truncated, 'terraform')
+              .addRaw('\n</details>')
+              .write();
 
       - name: Cleanup sensitive files
         if: always()
@@ -73,7 +94,7 @@ jobs:
 
   apply:
     needs: plan
-    # 👇 THIS triggers environment protection & approval
+    # 👇 This pauses execution & requires manual approval from GitHub Environment
     environment: production
     runs-on: ubuntu-latest
     permissions:
@@ -89,7 +110,7 @@ jobs:
         with:
           terraform_version: "1.13.5"
 
-      - name: Configure AWS Credentials (Apply)
+      - name: Configure AWS Credentials (Apply Role)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: "arn:aws:iam::478468757808:role/KubeStock-Terraform-Apply-Role"
