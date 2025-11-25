@@ -518,4 +518,4 @@ Monthly costs (based on us-east-1 pricing):
 - Data transfer: Variable
 - **Total**: ~$200-270/month (excluding data transfer)
 
-**Note**: The dev server can be stopped when not in use to save ~$30-40/month
+**Note**: The dev server can be stopped when not in use to save ~$30-40/month.
