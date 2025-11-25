@@ -86,6 +86,19 @@ These permissions allow Terraform to read existing infrastructure state and vali
 			"Resource": "*"
 		},
 		{
+			"Sid": "ECRReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"ecr:DescribeRepositories",
+				"ecr:ListTagsForResource",
+				"ecr:DescribeImages",
+				"ecr:GetRepositoryPolicy",
+				"ecr:GetLifecyclePolicy",
+				"ecr:GetLifecyclePolicyPreview"
+			],
+			"Resource": "*"
+		},
+		{
 			"Sid": "S3BackendAccess",
 			"Effect": "Allow",
 			"Action": [
@@ -220,7 +233,8 @@ These permissions allow Terraform to create, modify, and delete AWS resources.
         "iam:ListRoleTags"
       ],
       "Resource": [
-        "arn:aws:iam::*:role/kubestock-*"
+        "arn:aws:iam::*:role/kubestock-*",
+        "arn:aws:iam::*:role/KubeStock-*"
       ]
     },
     {
@@ -239,7 +253,8 @@ These permissions allow Terraform to create, modify, and delete AWS resources.
         "iam:UntagPolicy"
       ],
       "Resource": [
-        "arn:aws:iam::*:policy/kubestock-*"
+        "arn:aws:iam::*:policy/kubestock-*",
+        "arn:aws:iam::*:policy/KubeStock-*"
       ]
     },
     {
@@ -305,6 +320,33 @@ These permissions allow Terraform to create, modify, and delete AWS resources.
       "Effect": "Allow",
       "Action": [
         "autoscaling:*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ECRFullAccess",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:CreateRepository",
+        "ecr:DeleteRepository",
+        "ecr:DescribeRepositories",
+        "ecr:PutImageTagMutability",
+        "ecr:PutImageScanningConfiguration",
+        "ecr:PutLifecyclePolicy",
+        "ecr:DeleteLifecyclePolicy",
+        "ecr:GetLifecyclePolicy",
+        "ecr:DeleteRepositoryPolicy",
+        "ecr:GetRepositoryPolicy",
+        "ecr:SetRepositoryPolicy",
+        "ecr:TagResource",
+        "ecr:UntagResource",
+        "ecr:ListTagsForResource",
+        "ecr:DescribeImages",
+        "ecr:ListImages",
+        "ecr:BatchGetImage",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:PutReplicationConfiguration"
       ],
       "Resource": "*"
     },
