@@ -222,3 +222,19 @@ output "cluster_info" {
     nat_gateway_count    = 1
   }
 }
+
+
+# ========================================
+# ECR
+# ========================================
+
+output "ecr_repository_urls" {
+  description = "URLs of the ECR repositories for microservices"
+  value       = [for repo in aws_ecr_repository.microservices : repo.repository_url]
+}
+
+output "ecr_role_arn" {
+  description = "ARN of the IAM role for GitHub Actions to access ECR"
+  value       = aws_iam_role.github_actions_ecr.arn
+}
+
