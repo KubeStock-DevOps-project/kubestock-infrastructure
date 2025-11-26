@@ -172,6 +172,35 @@ resource "aws_instance" "worker" {
   }
 }
 
+# golden-ami-builder
+resource "aws_instance" "worker-golden-ami-builder" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = var.worker_instance_type
+  subnet_id     = aws_subnet.private[1].id
+  vpc_security_group_ids = [
+    aws_security_group.workers.id,
+    aws_security_group.k8s_common.id
+  ]
+  key_name             = aws_key_pair.kubestock.key_name
+  iam_instance_profile = aws_iam_instance_profile.k8s_nodes.name
+
+  # Fixed private IPs for Ansible inventory
+  private_ip = "10.0.11.50"
+
+  root_block_device {
+    volume_size = var.worker_volume_size
+    volume_type = "gp3"
+  }
+
+  user_data = filebase64("${path.module}/worker_user_data.sh")
+
+  tags = {
+    Name                              = "kubestock-worker-golden-ami-builder"
+    Role                              = "worker"
+    "kubernetes.io/cluster/kubestock" = "owned"
+  }
+}
+
 # ========================================
 # DATA SOURCE - Ubuntu AMI
 # ========================================
