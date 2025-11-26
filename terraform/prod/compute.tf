@@ -174,6 +174,7 @@ resource "aws_instance" "worker" {
 
 # golden-ami-builder
 resource "aws_instance" "worker-golden-ami-builder" {
+  count = 1
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.worker_instance_type
   subnet_id     = aws_subnet.private[1].id
