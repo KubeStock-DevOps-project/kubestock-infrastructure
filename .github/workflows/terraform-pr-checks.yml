@@ -40,7 +40,7 @@ jobs:
         working-directory: terraform/prod
         run: |
           cat > terraform.tfvars <<EOF
-          my_ip = "${{ vars.MY_IP }}"
+          my_ip = "${{ secrets.MY_IP }}"
           ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
           EOF
 
