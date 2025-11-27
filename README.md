@@ -31,9 +31,10 @@ Production-grade Kubernetes infrastructure on AWS with **zero-trust security mod
   - 1x Dev Server (t3.medium) - SSH gateway, Ansible, Terraform
   - 1x Control Plane (t3.medium) - Kubernetes master in ap-south-1a
   - 2x Worker Nodes (t3.medium) - Static instances across ap-south-1b and ap-south-1c
-- **Database**: Single-AZ RDS PostgreSQL 16 (db.t4g.medium) with auto-scaling storage
+- **Container Registry**: 5x ECR repositories for microservices (lifecycle policy: keep last 5 images)
 - **Load Balancer**: Internal NLB for Kubernetes API (port 6443)
 - **NAT Gateway**: Single NAT in ap-south-1a for cost optimization
+- **CI/CD**: GitHub Actions with OIDC for automated infrastructure deployment and container image pushes
 
 **Key Design Decisions:**
 - ✅ **No Auto Scaling Groups** - Static worker nodes managed via Ansible/Kubespray
@@ -47,14 +48,15 @@ Production-grade Kubernetes infrastructure on AWS with **zero-trust security mod
 
 ### Access Control Matrix
 
-| Resource | SSH Access | Kubectl Access | RDS Access |
+| Resource | SSH Access | Kubectl Access | ECR Access |
 |----------|-----------|----------------|------------|
-| **Bastion** | ✅ From anywhere (0.0.0.0/0) | ✅ Via NLB | ✅ Direct |
-| **Dev Server** | ✅ From `MY_IP` only | ✅ Direct to control plane | ❌ Use bastion |
-| **Control Plane** | ✅ From dev server | N/A | ❌ |
-| **Workers** | ✅ From dev server | N/A | ❌ |
+| **Bastion** | ✅ From anywhere (0.0.0.0/0) | ✅ Via NLB | ❌ |
+| **Dev Server** | ✅ From `MY_IP` only | ✅ Direct to control plane | ❌ |
+| **Control Plane** | ✅ From dev server | N/A | ✅ Pull only |
+| **Workers** | ✅ From dev server | N/A | ✅ Pull only |
+| **GitHub Actions** | N/A | N/A | ✅ Push only (OIDC) |
 
-### Security Groups (7 Groups)
+### Security Groups (6 Groups)
 
 ```
 Internet → Bastion (0.0.0.0/0:22)
@@ -62,7 +64,6 @@ MY_IP → Dev Server (MY_IP:22)
 Dev Server → All K8s Nodes (SSH:22)
 Bastion → NLB → Control Plane (K8s API:6443)
 K8s Nodes ↔ K8s Nodes (all ports via k8s_common SG)
-K8s Nodes + Bastion → RDS (PostgreSQL:5432)
 ```
 
 **Critical Rules:**
@@ -82,7 +83,7 @@ K8s Nodes + Bastion → RDS (PostgreSQL:5432)
   - `10.0.2.0/24` (ap-south-1b)
   - `10.0.3.0/24` (ap-south-1c)
 - **Private Subnets**: 
-  - `10.0.10.0/24` (ap-south-1a) - Control Plane, RDS
+  - `10.0.10.0/24` (ap-south-1a) - Control Plane
   - `10.0.11.0/24` (ap-south-1b) - Worker 1
   - `10.0.12.0/24` (ap-south-1c) - Worker 2
 - **NAT Gateway**: Single NAT in ap-south-1a (saves ~$64/month vs 3 NATs)
@@ -91,8 +92,8 @@ K8s Nodes + Bastion → RDS (PostgreSQL:5432)
 ### Compute Instances
 
 | Instance | Type | Subnet | IP | Purpose |
-|----------|------|--------|-----|---------||
-| Bastion | t3.micro | Public (ap-south-1a) | Elastic IP | kubectl via NLB, RDS access |
+|----------|------|--------|-----|---------|
+| Bastion | t3.micro | Public (ap-south-1a) | Elastic IP | kubectl via NLB |
 | Dev Server | t3.medium | Public (ap-south-1a) | Dynamic (free) | SSH gateway, Ansible, Terraform |
 | Control Plane | t3.medium | Private (ap-south-1a) | `10.0.10.21` | Kubernetes master |
 | Worker 1 | t3.medium | Private (ap-south-1b) | `10.0.11.30` | Kubernetes worker |
@@ -100,12 +101,16 @@ K8s Nodes + Bastion → RDS (PostgreSQL:5432)
 
 **Note:** Dev server has no Elastic IP - public IP changes on start/stop but costs $0 when stopped.
 
-### Database
-- **Engine**: PostgreSQL 16.6
-- **Instance**: db.t4g.medium (ARM-based Graviton)
-- **Storage**: 20GB initial, auto-scales to 100GB (gp3)
-- **HA**: Single-AZ in ap-south-1a (multi-AZ disabled for cost savings)
-- **Backups**: Disabled in dev mode (enable for production)
+### Container Registry (ECR)
+- **Repositories**: 5 microservices
+  - `ms-product-catalog`
+  - `ms-inventory`
+  - `ms-supplier`
+  - `ms-order-management`
+  - `ms-test`
+- **Lifecycle Policy**: Keep last 5 images per repository
+- **Features**: Image scanning on push, AES256 encryption
+- **Access**: GitHub Actions (push via OIDC), K8s nodes (pull via IAM instance profile)
 
 ### Load Balancer
 - **Type**: Network Load Balancer (NLB)
@@ -115,10 +120,14 @@ K8s Nodes + Bastion → RDS (PostgreSQL:5432)
 - **Health Checks**: TCP on port 6443 every 30s
 
 ### IAM Roles
-- **k8s-nodes**: Instance profile for control plane and workers
+- **kubestock-node-role**: Instance profile for control plane and workers
   - SSM Session Manager access
-  - CloudWatch Logs write
+  - Kubernetes AWS controllers (Cluster Autoscaler, EBS CSI, AWS LB Controller)
   - ECR pull access
+- **KubeStock-github-actions-ecr-role**: OIDC role for GitHub Actions
+  - ECR push permissions (all microservice repositories)
+  - Trust policy: restricted to specific repos and production environment
+  - Used by CI/CD pipelines to push container images
 
 ---
 
@@ -150,7 +159,6 @@ cd kubestock-infrastructure/terraform/prod
 cat > terraform.tfvars <<EOF
 my_ip = "$(curl -4 ifconfig.me)/32"
 ssh_public_key_content = "$(cat ~/.ssh/kubestock-key.pub)"
-rds_password = "YourSecurePassword123!"
 EOF
 
 # 3. Initialize and deploy
@@ -167,8 +175,11 @@ terraform output bastion_public_ip
 terraform output dev_server_public_ip
 terraform output control_plane_private_ip
 terraform output worker_private_ips
-terraform output rds_endpoint
 terraform output nlb_dns_name
+
+# ECR repositories
+terraform output ecr_repository_urls
+terraform output github_actions_role_arn
 ```
 
 ---
@@ -195,14 +206,16 @@ terraform output nlb_dns_name
 **Set in**: Repository Settings → Secrets and variables → Actions
 
 #### Variables (non-sensitive):
-- `AWS_ACCESS_KEY_ID` - AWS access key
 - `AWS_REGION` - Deployment region (e.g., `ap-south-1`)
 - `MY_IP` - Your public IP with CIDR (e.g., `1.2.3.4/32`)
 
 #### Secrets (sensitive):
-- `AWS_SECRET_ACCESS_KEY` - AWS secret key
 - `SSH_PUBLIC_KEY_CONTENT` - SSH public key (full content)
-- `RDS_PASSWORD` - PostgreSQL master password
+
+**Note**: GitHub Actions uses OIDC for AWS authentication. Configure the following IAM roles:
+- `KubeStock-Terraform-Plan-Role` - For PR checks (read-only)
+- `KubeStock-Terraform-Apply-Role` - For deployments (read-write)
+- `KubeStock-github-actions-ecr-role` - For ECR push operations
 
 **Documentation**: See [`.github/GITHUB_SECRETS_SETUP.md`](.github/GITHUB_SECRETS_SETUP.md) for detailed setup instructions.
 
@@ -273,25 +286,26 @@ When proposing infrastructure changes:
 
 ## 💰 Cost Breakdown
 
-**Monthly Estimate**: ~$191/month (with dev server stopped)
+**Monthly Estimate**: ~$147/month (with dev server stopped)
 
 | Resource | Spec | Monthly Cost |
-|----------|------|--------------||
+|----------|------|--------------|
 | NAT Gateway | 1x in ap-south-1a | $32 |
 | Bastion | t3.micro (24/7) | $7 |
 | Dev Server | t3.medium (stopped) | $2 (storage only) |
 | Control Plane | t3.medium (24/7) | $30 |
 | Worker 1 | t3.medium (24/7) | $30 |
 | Worker 2 | t3.medium (24/7) | $30 |
-| RDS PostgreSQL | db.t4g.medium (24/7) | $44 |
 | NLB | Internal NLB | $16 |
+| ECR | 5 repositories | <$1 (storage only) |
 | Storage/Transfer | EBS + Data | ~$10 |
 
 **Cost Optimization Tips:**
 - Stop dev server when not in use: **saves $28/month**
 - Use Spot Instances for workers: **saves ~40%** (requires setup)
-- Enable RDS storage autoscaling: prevents over-provisioning
+- ECR lifecycle policies: automatically remove old images to minimize storage costs
 - Monitor NAT Gateway data transfer in ap-south-1a: largest variable cost
+- Review ECR image scanning costs if pushing frequently
 
 ---
 
@@ -350,19 +364,23 @@ ssh ubuntu@<dev-server-ip>
 kubectl --server=https://10.0.10.21:6443 --kubeconfig ~/.kube/config get nodes
 ```
 
-### Database Access
+### ECR Access
 
-**From bastion:**
+**Login to ECR (from any K8s node):**
 ```bash
-ssh ubuntu@<bastion-eip>
-psql -h <rds-endpoint> -U kubestock -d kubestock
+aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.ap-south-1.amazonaws.com
 ```
 
-**Port forwarding from local machine:**
-```bash
-ssh -i ~/.ssh/kubestock-key -L 5432:<rds-endpoint>:5432 ubuntu@<bastion-eip>
-# In another terminal:
-psql -h localhost -U kubestock -d kubestock
+**GitHub Actions (automatic via OIDC):**
+```yaml
+- name: Configure AWS credentials
+  uses: aws-actions/configure-aws-credentials@v4
+  with:
+    role-to-assume: ${{ secrets.AWS_ROLE_ARN }}  # KubeStock-github-actions-ecr-role
+    aws-region: ap-south-1
+
+- name: Login to Amazon ECR
+  uses: aws-actions/amazon-ecr-login@v2
 ```
 
 ---
@@ -385,9 +403,10 @@ terraform destroy
 
 ⚠️ **WARNING**: This will delete all resources including:
 - All EC2 instances
-- RDS database (final snapshot created if enabled)
+- ECR repositories and container images
 - VPC and networking components
 - Load balancer and NAT gateway
+- IAM roles and policies
 
 ---
 
