@@ -72,8 +72,8 @@ See [Golden AMI Build Guide](../docs/golden-ami-build-guide.md) for details.
 
 | Property | Value |
 |----------|-------|
-| AMI ID | `ami-090335b263087e7e4` |
-| Name | `kubestock-worker-golden-ami-20251128-131858` |
+| AMI ID | `ami-0add7db38ab766c87` |
+| Name | `kubestock-worker-golden-ami-v3-20251128-141559` |
 | K8s Version | v1.34.1 |
 | containerd | 2.1.4 |
 | CNI | Calico |

@@ -118,7 +118,7 @@ resource "aws_iam_role_policy" "k8s_nodes_ssm" {
 
 resource "aws_launch_template" "k8s_worker" {
   name_prefix   = "kubestock-worker-"
-  image_id      = "ami-09d8ae7c9b76bc3ee"  # Golden AMI
+  image_id      = "ami-0add7db38ab766c87"  # Golden AMI v3
   instance_type = var.worker_instance_type
 
   iam_instance_profile {
@@ -143,8 +143,8 @@ resource "aws_launch_template" "k8s_worker" {
     # Wait for cloud-init to complete
     cloud-init status --wait
     
-    # Run the cluster join script
-    /usr/local/bin/join-cluster.sh
+    # Run the cluster join script with SSM
+    /usr/local/bin/join-cluster.sh --ssm
     
     echo "Worker node initialization complete at $(date)"
   EOF
@@ -432,6 +432,60 @@ cat /var/log/user-data.log
 cat /var/log/k8s-join.log
 journalctl -u kubelet
 ```
+
+## Manual Node Join (Testing/Debugging)
+
+For testing the AMI or manually joining a node without SSM:
+
+### 1. Launch Instance from Golden AMI
+
+```bash
+# Current AMI: ami-0add7db38ab766c87
+aws ec2 run-instances \
+  --image-id ami-0add7db38ab766c87 \
+  --instance-type t3.medium \
+  --subnet-id <private-subnet-id> \
+  --security-group-ids <worker-sg> <k8s-common-sg> \
+  --iam-instance-profile Name=kubestock-node-profile \
+  --key-name kubestock-key \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=manual-worker}]'
+```
+
+### 2. Get Join Token from Control Plane
+
+```bash
+# SSH to control plane and create token
+TOKEN=$(ssh -i ~/.ssh/kubestock-key ubuntu@10.0.10.21 "sudo kubeadm token create")
+echo "Token: $TOKEN"
+
+# CA hash (static, doesn't change)
+CA_HASH="sha256:eeb5ebf75506025f4337442b4ad2178dbce8038d0613414e39812cdf825bcb2e"
+```
+
+### 3. Run Join Script on Worker
+
+```bash
+# SSH to the new worker and run join script
+ssh -i ~/.ssh/kubestock-key ubuntu@<worker-ip> \
+  "sudo /usr/local/bin/join-cluster.sh --token $TOKEN --ca-cert-hash $CA_HASH"
+```
+
+### 4. Verify Node Joined
+
+```bash
+ssh -i ~/.ssh/kubestock-key ubuntu@10.0.10.21 \
+  "sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get nodes"
+```
+
+### What the Join Script Does
+
+1. **configure-kubelet.sh**: Fetches instance IP/ID from EC2 metadata, updates:
+   - `/etc/kubernetes/kubelet.env` - node-ip and hostname-override
+   - `/etc/kubernetes/kubelet-config.yaml` - address binding
+
+2. **start-nginx-proxy.sh**: Starts nginx container that proxies localhost:6443 to control plane
+
+3. **kubeadm join**: Joins the cluster using the provided token and CA hash
 
 ### Token expired
 

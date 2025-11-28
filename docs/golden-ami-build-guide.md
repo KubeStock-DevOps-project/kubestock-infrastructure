@@ -223,14 +223,16 @@ sudo /usr/local/bin/join-cluster.sh --ssm
 
 | Property | Value |
 |----------|-------|
-| AMI ID | `ami-090335b263087e7e4` |
-| Name | `kubestock-worker-golden-ami-20251128-131858` |
+| AMI ID | `ami-0add7db38ab766c87` |
+| Name | `kubestock-worker-golden-ami-v3-20251128-141559` |
 | K8s Version | v1.34.1 |
 | Container Runtime | containerd 2.1.4 |
 | CNI | Calico |
 | Base OS | Ubuntu 22.04 LTS |
 
-**Previous AMI**: `ami-09d8ae7c9b76bc3ee` - had issues with missing shebangs in scripts and missing `jq` package.
+**Previous AMIs**:
+- `ami-090335b263087e7e4` - v2, had kubelet.env overwrite issue
+- `ami-09d8ae7c9b76bc3ee` - v1, missing shebangs and jq package
 
 ## Files in the AMI
 
