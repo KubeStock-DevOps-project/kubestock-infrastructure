@@ -187,16 +187,52 @@ sudo /usr/local/bin/join-cluster.sh "$JOIN_TOKEN" "$CERT_HASH"
 kubectl get nodes
 ```
 
+## Scripts in Repository
+
+All AMI-related scripts are maintained in `/scripts/ami/`:
+
+```
+scripts/ami/
+├── configure-kubelet.sh   # Configure kubelet with EC2 metadata
+├── join-cluster.sh        # Main cluster join orchestration
+├── start-nginx-proxy.sh   # Start nginx proxy container
+├── nginx.conf             # Nginx proxy configuration template
+├── nginx-proxy.service    # Systemd service unit file
+└── prepare-ami.sh         # Prepare a node for AMI creation
+```
+
+### Script Usage
+
+#### Manual Join (for testing)
+```bash
+# Get token from control plane
+TOKEN=$(ssh ubuntu@10.0.10.21 "sudo kubeadm token create")
+CA_HASH="sha256:eeb5ebf75506025f4337442b4ad2178dbce8038d0613414e39812cdf825bcb2e"
+
+# Join with arguments
+sudo /usr/local/bin/join-cluster.sh --token "$TOKEN" --ca-cert-hash "$CA_HASH"
+```
+
+#### ASG with SSM (automated)
+```bash
+# In user-data script (tokens fetched from SSM)
+sudo /usr/local/bin/join-cluster.sh --ssm
+```
+
 ## Current AMI Information
 
 | Property | Value |
 |----------|-------|
-| AMI ID | `ami-09d8ae7c9b76bc3ee` |
-| Name | `kubestock-worker-golden-ami-20251126-200458` |
+| AMI ID | `ami-0add7db38ab766c87` |
+| Name | `kubestock-worker-golden-ami-v3-20251128-141559` |
 | K8s Version | v1.34.1 |
 | Container Runtime | containerd 2.1.4 |
 | CNI | Calico |
 | Base OS | Ubuntu 22.04 LTS |
+
+**Previous AMIs**:
+- `ami-090335b263087e7e4` - v2, had kubelet.env overwrite issue
+- `ami-09d8ae7c9b76bc3ee` - v1, missing shebangs and jq package
 
 ## Files in the AMI
 

@@ -1,0 +1,16 @@
+[Unit]
+Description=Kubernetes API Server Nginx Proxy
+Documentation=https://kubernetes.io/docs/
+After=network.target containerd.service
+Requires=containerd.service
+Before=kubelet.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/start-nginx-proxy.sh
+ExecStop=/usr/local/bin/nerdctl stop nginx-proxy
+ExecStopPost=/usr/local/bin/nerdctl rm -f nginx-proxy
+
+[Install]
+WantedBy=multi-user.target
