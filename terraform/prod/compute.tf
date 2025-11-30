@@ -144,7 +144,7 @@ resource "aws_instance" "control_plane" {
 # Keep resource definition for potential rollback or hybrid setup
 
 resource "aws_instance" "worker" {
-  count         = 0  # Disabled - using ASG for worker nodes
+  count         = 0 # Disabled - using ASG for worker nodes
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.worker_instance_type
   subnet_id     = aws_subnet.private[count.index % 2 == 0 ? 1 : 2].id # Alternate between us-east-1b and us-east-1c
