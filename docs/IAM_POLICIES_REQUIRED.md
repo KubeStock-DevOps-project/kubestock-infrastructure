@@ -99,6 +99,39 @@ These permissions allow Terraform to read existing infrastructure state and vali
 			"Resource": "*"
 		},
 		{
+			"Sid": "LambdaReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"lambda:GetFunction",
+				"lambda:GetFunctionConfiguration",
+				"lambda:ListFunctions",
+				"lambda:ListTags",
+				"lambda:GetPolicy"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "CloudWatchLogsReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"logs:DescribeLogGroups",
+				"logs:DescribeLogStreams",
+				"logs:ListTagsForResource"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "EventBridgeReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"events:DescribeRule",
+				"events:ListRules",
+				"events:ListTargetsByRule",
+				"events:ListTagsForResource"
+			],
+			"Resource": "*"
+		},
+		{
 			"Sid": "S3BackendAccess",
 			"Effect": "Allow",
 			"Action": [
@@ -374,6 +407,74 @@ These permissions allow Terraform to create, modify, and delete AWS resources.
         "ssm:GetParametersByPath"
       ],
       "Resource": "arn:aws:ssm:*:*:parameter/kubestock/*"
+    },
+    {
+      "Sid": "LambdaFullAccess",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:CreateFunction",
+        "lambda:DeleteFunction",
+        "lambda:GetFunction",
+        "lambda:GetFunctionConfiguration",
+        "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration",
+        "lambda:AddPermission",
+        "lambda:RemovePermission",
+        "lambda:GetPolicy",
+        "lambda:ListTags",
+        "lambda:TagResource",
+        "lambda:UntagResource"
+      ],
+      "Resource": "arn:aws:lambda:*:*:function:kubestock-*"
+    },
+    {
+      "Sid": "CloudWatchLogsFullAccess",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:DeleteLogGroup",
+        "logs:DescribeLogGroups",
+        "logs:PutRetentionPolicy",
+        "logs:DeleteRetentionPolicy",
+        "logs:TagResource",
+        "logs:UntagResource",
+        "logs:ListTagsForResource"
+      ],
+      "Resource": "arn:aws:logs:*:*:log-group:/aws/lambda/kubestock-*"
+    },
+    {
+      "Sid": "EventBridgeFullAccess",
+      "Effect": "Allow",
+      "Action": [
+        "events:PutRule",
+        "events:DeleteRule",
+        "events:DescribeRule",
+        "events:EnableRule",
+        "events:DisableRule",
+        "events:PutTargets",
+        "events:RemoveTargets",
+        "events:ListTargetsByRule",
+        "events:ListRules",
+        "events:TagResource",
+        "events:UntagResource",
+        "events:ListTagsForResource"
+      ],
+      "Resource": "arn:aws:events:*:*:rule/kubestock-*"
+    },
+    {
+      "Sid": "IAMPassRoleToLambda",
+      "Effect": "Allow",
+      "Action": [
+        "iam:PassRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::*:role/kubestock-*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "lambda.amazonaws.com"
+        }
+      }
     }
   ]
 }
