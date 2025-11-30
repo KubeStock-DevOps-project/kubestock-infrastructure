@@ -136,19 +136,19 @@ variable "worker_private_ips" {
 variable "worker_ami_id" {
   description = "AMI ID for the Kubernetes worker nodes (Golden AMI)"
   type        = string
-  default     = "ami-0add7db38ab766c87" # kubestock-worker-golden-ami-v3
+  default     = "ami-03507841d11a30bc0" # kubestock-worker-golden-ami-v4 - with AWS CLI
 }
 
 variable "asg_desired_capacity" {
   description = "Desired number of worker nodes in the ASG"
   type        = number
-  default     = 0 # Start with 0, scale up as needed
+  default     = 1 # Start with 1
 }
 
 variable "asg_min_size" {
   description = "Minimum number of worker nodes in the ASG"
   type        = number
-  default     = 0
+  default     = 1
 }
 
 variable "asg_max_size" {

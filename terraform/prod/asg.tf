@@ -30,8 +30,8 @@ resource "aws_launch_template" "k8s_worker" {
     exec > >(tee /var/log/user-data.log) 2>&1
     echo "Starting worker node initialization at $(date)"
     
-    # Wait for cloud-init to complete
-    cloud-init status --wait
+    # Wait a bit for networking to be ready (cloud-init status --wait can hang on some AMIs)
+    sleep 10
     
     # Run the cluster join script with SSM
     /usr/local/bin/join-cluster.sh --ssm
