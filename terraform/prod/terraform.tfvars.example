@@ -47,7 +47,7 @@ ssh_public_key_content = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... your-key-he
 # worker_private_ips       = ["10.0.11.30", "10.0.12.30"]
 
 # ========================================
-# Database (Optional - defaults provided).
+# Database (Optional - defaults provided)
 # ========================================
 # rds_instance_class        = "db.t4g.medium"
 # rds_allocated_storage     = 20

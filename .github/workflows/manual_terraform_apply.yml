@@ -55,7 +55,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: deployment-plan
-          path: terraform/prod/tfplan
+          path: |
+            terraform/prod/tfplan
+            terraform/prod/lambda/
 
       - name: Upload Plan Output File
         uses: actions/upload-artifact@v4
@@ -124,7 +126,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: deployment-plan
-          path: terraform/prod/
+          path: terraform/prod
 
       - name: Regenerate terraform.tfvars
         working-directory: terraform/prod
