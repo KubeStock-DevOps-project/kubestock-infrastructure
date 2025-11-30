@@ -53,34 +53,50 @@ jobs:
             - name: Terraform Plan and Save
               id: plan
               working-directory: terraform/prod
-              run: terraform plan -input=false -out=tfplan -no-color | tee plan_output.txt
+              run: |
+                  set -o pipefail
+                  terraform plan -input=false -out=tfplan -no-color 2>&1 | tee plan_output.txt
 
             - name: Upload Plan Artifact
+              if: success()
               uses: actions/upload-artifact@v4
               with:
                   name: deployment-plan
                   path: terraform/prod/tfplan
 
             - name: Upload Plan Output for Review
+              if: always()
               uses: actions/upload-artifact@v4
               with:
                   name: plan-output
                   path: terraform/prod/plan_output.txt
 
             - name: Publish Plan to Job Summary
+              if: always()
               uses: actions/github-script@v7
               with:
                   script: |
                       const fs = require('fs');
-                      const planOutput = fs.readFileSync('terraform/prod/plan_output.txt', 'utf8');
+                      let planOutput = '';
+                      try {
+                        planOutput = fs.readFileSync('terraform/prod/plan_output.txt', 'utf8');
+                      } catch (e) {
+                        planOutput = 'Plan output file not found';
+                      }
                       const maxLen = 65000;
                       const truncatedPlan = planOutput.length > maxLen ? 
                         planOutput.substring(0, maxLen) + '\n\n... (truncated)' : 
                         planOutput;
+                      
+                      const planFailed = planOutput.includes('Error:') || planOutput.includes('Planning failed');
+                      const statusEmoji = planFailed ? '❌' : '✅';
+                      const statusText = planFailed ? 'Plan Failed' : 'Plan Succeeded';
 
                       await core.summary
-                        .addHeading('Terraform Plan Results')
-                        .addRaw('__Waiting for manual approval in production environment.__')
+                        .addHeading(`${statusEmoji} Terraform Plan Results - ${statusText}`)
+                        .addRaw(planFailed ? 
+                          '__Plan failed. Please fix errors before merging.__' :
+                          '__Waiting for manual approval in production environment.__')
                         .addRaw('\n\n<details><summary>Click to expand full plan output</summary>\n\n')
                         .addCodeBlock(truncatedPlan, 'terraform')
                         .addRaw('\n</details>')

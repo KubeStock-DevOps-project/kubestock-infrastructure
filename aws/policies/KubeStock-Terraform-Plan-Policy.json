@@ -1,0 +1,54 @@
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "AllServicesReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"ec2:Describe*",
+				"ec2:Get*",
+				"ec2:List*",
+				"elasticloadbalancing:Describe*",
+				"elasticloadbalancing:Get*",
+				"autoscaling:Describe*",
+				"ecr:Describe*",
+				"ecr:Get*",
+				"ecr:List*",
+				"lambda:List*",
+				"lambda:Get*",
+				"logs:Describe*",
+				"logs:Get*",
+				"logs:List*",
+				"events:Describe*",
+				"events:List*",
+				"s3:List*",
+				"s3:Get*",
+				"ssm:Describe*",
+				"ssm:Get*",
+				"ssm:List*"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "IAMReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"iam:Get*",
+				"iam:List*"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "S3BackendAccess",
+			"Effect": "Allow",
+			"Action": [
+				"s3:PutObject",
+				"s3:DeleteObject"
+			],
+			"Resource": [
+				"arn:aws:s3:::kubestock-terraform-state",
+				"arn:aws:s3:::kubestock-terraform-state/*"
+			]
+		}
+	]
+}
