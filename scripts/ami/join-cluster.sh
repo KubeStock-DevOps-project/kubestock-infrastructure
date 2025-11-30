@@ -75,8 +75,8 @@ if [ "$USE_SSM" = true ]; then
     AWS_REGION=$(curl -s -H "X-aws-ec2-metadata-token: $IMDSv2_TOKEN" http://169.254.169.254/latest/meta-data/placement/region)
     
     # Fetch from SSM
-    TOKEN=$(aws ssm get-parameter --name "/kubestock/k8s/join-token" --with-decryption --region "$AWS_REGION" --query 'Parameter.Value' --output text)
-    CA_CERT_HASH=$(aws ssm get-parameter --name "/kubestock/k8s/ca-cert-hash" --region "$AWS_REGION" --query 'Parameter.Value' --output text)
+    TOKEN=$(aws ssm get-parameter --name "/kubestock/join-token" --with-decryption --region "$AWS_REGION" --query 'Parameter.Value' --output text)
+    CA_CERT_HASH="sha256:$(aws ssm get-parameter --name "/kubestock/ca-cert-hash" --region "$AWS_REGION" --query 'Parameter.Value' --output text)"
     
     if [ -z "$TOKEN" ] || [ -z "$CA_CERT_HASH" ]; then
         log "ERROR: Failed to fetch join credentials from SSM"

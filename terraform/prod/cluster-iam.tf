@@ -166,3 +166,38 @@ resource "aws_iam_instance_profile" "k8s_nodes" {
     Name = "kubestock-node-profile"
   }
 }
+
+
+
+resource "aws_iam_role_policy" "k8s_nodes_ssm" {
+  name = "k8s-nodes-ssm-policy"
+  role = aws_iam_role.k8s_nodes.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters"
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/kubestock/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "ssm.${data.aws_region.current.name}.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+}
