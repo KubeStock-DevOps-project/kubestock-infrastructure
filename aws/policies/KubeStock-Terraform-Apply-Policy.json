@@ -4,82 +4,59 @@
         {
             "Sid": "EC2FullAccess",
             "Effect": "Allow",
-            "Action": [
-                "ec2:Describe*",
-                "ec2:Get*",
-                "ec2:List*",
-                "ec2:RunInstances",
-                "ec2:StartInstances",
-                "ec2:StopInstances",
-                "ec2:TerminateInstances",
-                "ec2:RebootInstances",
-                "ec2:ModifyInstanceAttribute",
-                "ec2:CreateTags",
-                "ec2:DeleteTags",
-                "ec2:CreateKeyPair",
-                "ec2:DeleteKeyPair",
-                "ec2:ImportKeyPair",
-                "ec2:CreateVolume",
-                "ec2:DeleteVolume",
-                "ec2:AttachVolume",
-                "ec2:DetachVolume",
-                "ec2:ModifyVolume",
-                "ec2:CreateSnapshot",
-                "ec2:DeleteSnapshot",
-                "ec2:AllocateAddress",
-                "ec2:ReleaseAddress",
-                "ec2:AssociateAddress",
-                "ec2:DisassociateAddress"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Sid": "VPCFullAccess",
-            "Effect": "Allow",
-            "Action": [
-                "ec2:CreateVpc",
-                "ec2:DeleteVpc",
-                "ec2:ModifyVpcAttribute",
-                "ec2:CreateSubnet",
-                "ec2:DeleteSubnet",
-                "ec2:ModifySubnetAttribute",
-                "ec2:CreateInternetGateway",
-                "ec2:DeleteInternetGateway",
-                "ec2:AttachInternetGateway",
-                "ec2:DetachInternetGateway",
-                "ec2:CreateNatGateway",
-                "ec2:DeleteNatGateway",
-                "ec2:CreateRouteTable",
-                "ec2:DeleteRouteTable",
-                "ec2:CreateRoute",
-                "ec2:DeleteRoute",
-                "ec2:ReplaceRoute",
-                "ec2:AssociateRouteTable",
-                "ec2:DisassociateRouteTable",
-                "ec2:ReplaceRouteTableAssociation",
-                "ec2:CreateSecurityGroup",
-                "ec2:DeleteSecurityGroup",
-                "ec2:AuthorizeSecurityGroupIngress",
-                "ec2:AuthorizeSecurityGroupEgress",
-                "ec2:RevokeSecurityGroupIngress",
-                "ec2:RevokeSecurityGroupEgress",
-                "ec2:ModifySecurityGroupRules",
-                "ec2:UpdateSecurityGroupRuleDescriptionsIngress",
-                "ec2:UpdateSecurityGroupRuleDescriptionsEgress",
-                "ec2:CreateNetworkInterface",
-                "ec2:DeleteNetworkInterface",
-                "ec2:AttachNetworkInterface",
-                "ec2:DetachNetworkInterface"
-            ],
+            "Action": "ec2:*",
             "Resource": "*"
         },
         {
             "Sid": "ELBFullAccess",
             "Effect": "Allow",
-            "Action": [
-                "elasticloadbalancing:*"
-            ],
+            "Action": "elasticloadbalancing:*",
             "Resource": "*"
+        },
+        {
+            "Sid": "AutoScalingFullAccess",
+            "Effect": "Allow",
+            "Action": "autoscaling:*",
+            "Resource": "*"
+        },
+        {
+            "Sid": "ECRFullAccess",
+            "Effect": "Allow",
+            "Action": "ecr:*",
+            "Resource": "*"
+        },
+        {
+            "Sid": "LambdaFullAccess",
+            "Effect": "Allow",
+            "Action": "lambda:*",
+            "Resource": "arn:aws:lambda:*:*:function:kubestock-*"
+        },
+        {
+            "Sid": "CloudWatchLogsFullAccess",
+            "Effect": "Allow",
+            "Action": "logs:*",
+            "Resource": "arn:aws:logs:*:*:log-group:/aws/lambda/kubestock-*"
+        },
+        {
+            "Sid": "EventBridgeFullAccess",
+            "Effect": "Allow",
+            "Action": "events:*",
+            "Resource": "arn:aws:events:*:*:rule/kubestock-*"
+        },
+        {
+            "Sid": "S3BackendFullAccess",
+            "Effect": "Allow",
+            "Action": "s3:*",
+            "Resource": [
+                "arn:aws:s3:::kubestock-terraform-state",
+                "arn:aws:s3:::kubestock-terraform-state/*"
+            ]
+        },
+        {
+            "Sid": "SSMParameterStore",
+            "Effect": "Allow",
+            "Action": "ssm:*",
+            "Resource": "arn:aws:ssm:*:*:parameter/kubestock/*"
         },
         {
             "Sid": "IAMRoleManagement",
@@ -127,15 +104,6 @@
             ]
         },
         {
-            "Sid": "IAMOIDCDiscovery",
-            "Effect": "Allow",
-            "Action": [
-                "iam:ListOpenIDConnectProviders",
-                "iam:GetOpenIDConnectProvider"
-            ],
-            "Resource": "*"
-        },
-        {
             "Sid": "IAMInstanceProfileManagement",
             "Effect": "Allow",
             "Action": [
@@ -149,16 +117,12 @@
                 "iam:TagInstanceProfile",
                 "iam:UntagInstanceProfile"
             ],
-            "Resource": [
-                "arn:aws:iam::*:instance-profile/kubestock-*"
-            ]
+            "Resource": "arn:aws:iam::*:instance-profile/kubestock-*"
         },
         {
             "Sid": "IAMServiceLinkedRole",
             "Effect": "Allow",
-            "Action": [
-                "iam:CreateServiceLinkedRole"
-            ],
+            "Action": "iam:CreateServiceLinkedRole",
             "Resource": "arn:aws:iam::*:role/aws-service-role/*",
             "Condition": {
                 "StringEquals": {
@@ -172,145 +136,25 @@
         {
             "Sid": "IAMPassRole",
             "Effect": "Allow",
-            "Action": [
-                "iam:PassRole"
-            ],
-            "Resource": [
-                "arn:aws:iam::*:role/kubestock-*"
-            ],
+            "Action": "iam:PassRole",
+            "Resource": "arn:aws:iam::*:role/kubestock-*",
             "Condition": {
                 "StringEquals": {
-                    "iam:PassedToService": "ec2.amazonaws.com"
+                    "iam:PassedToService": [
+                        "ec2.amazonaws.com",
+                        "lambda.amazonaws.com"
+                    ]
                 }
             }
         },
         {
-            "Sid": "AutoScalingFullAccess",
+            "Sid": "IAMReadOnly",
             "Effect": "Allow",
             "Action": [
-                "autoscaling:*"
+                "iam:Get*",
+                "iam:List*"
             ],
             "Resource": "*"
-        },
-        {
-            "Sid": "ECRFullAccess",
-            "Effect": "Allow",
-            "Action": [
-                "ecr:CreateRepository",
-                "ecr:DeleteRepository",
-                "ecr:DescribeRepositories",
-                "ecr:PutImageTagMutability",
-                "ecr:PutImageScanningConfiguration",
-                "ecr:PutLifecyclePolicy",
-                "ecr:DeleteLifecyclePolicy",
-                "ecr:GetLifecyclePolicy",
-                "ecr:DeleteRepositoryPolicy",
-                "ecr:GetRepositoryPolicy",
-                "ecr:SetRepositoryPolicy",
-                "ecr:TagResource",
-                "ecr:UntagResource",
-                "ecr:ListTagsForResource",
-                "ecr:DescribeImages",
-                "ecr:ListImages",
-                "ecr:BatchGetImage",
-                "ecr:BatchCheckLayerAvailability",
-                "ecr:GetDownloadUrlForLayer",
-                "ecr:PutReplicationConfiguration"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Sid": "S3BackendFullAccess",
-            "Effect": "Allow",
-            "Action": [
-                "s3:ListBucket",
-                "s3:GetObject",
-                "s3:PutObject",
-                "s3:DeleteObject",
-                "s3:GetObjectVersion"
-            ],
-            "Resource": [
-                "arn:aws:s3:::kubestock-terraform-state",
-                "arn:aws:s3:::kubestock-terraform-state/*"
-            ]
-        },
-        {
-            "Sid": "SSMParameterStore",
-            "Effect": "Allow",
-            "Action": [
-                "ssm:GetParameter",
-                "ssm:GetParameters",
-                "ssm:GetParametersByPath"
-            ],
-            "Resource": "arn:aws:ssm:*:*:parameter/kubestock/*"
-        },
-        {
-            "Sid": "LambdaFullAccess",
-            "Effect": "Allow",
-            "Action": [
-                "lambda:CreateFunction",
-                "lambda:DeleteFunction",
-                "lambda:GetFunction",
-                "lambda:GetFunctionConfiguration",
-                "lambda:UpdateFunctionCode",
-                "lambda:UpdateFunctionConfiguration",
-                "lambda:AddPermission",
-                "lambda:RemovePermission",
-                "lambda:GetPolicy",
-                "lambda:ListTags",
-                "lambda:TagResource",
-                "lambda:UntagResource"
-            ],
-            "Resource": "arn:aws:lambda:*:*:function:kubestock-*"
-        },
-        {
-            "Sid": "CloudWatchLogsFullAccess",
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogGroup",
-                "logs:DeleteLogGroup",
-                "logs:DescribeLogGroups",
-                "logs:PutRetentionPolicy",
-                "logs:DeleteRetentionPolicy",
-                "logs:TagResource",
-                "logs:UntagResource",
-                "logs:ListTagsForResource"
-            ],
-            "Resource": "arn:aws:logs:*:*:log-group:/aws/lambda/kubestock-*"
-        },
-        {
-            "Sid": "EventBridgeFullAccess",
-            "Effect": "Allow",
-            "Action": [
-                "events:PutRule",
-                "events:DeleteRule",
-                "events:DescribeRule",
-                "events:EnableRule",
-                "events:DisableRule",
-                "events:PutTargets",
-                "events:RemoveTargets",
-                "events:ListTargetsByRule",
-                "events:ListRules",
-                "events:TagResource",
-                "events:UntagResource",
-                "events:ListTagsForResource"
-            ],
-            "Resource": "arn:aws:events:*:*:rule/kubestock-*"
-        },
-        {
-            "Sid": "IAMPassRoleToLambda",
-            "Effect": "Allow",
-            "Action": [
-                "iam:PassRole"
-            ],
-            "Resource": [
-                "arn:aws:iam::*:role/kubestock-*"
-            ],
-            "Condition": {
-                "StringEquals": {
-                    "iam:PassedToService": "lambda.amazonaws.com"
-                }
-            }
         }
     ]
 }
