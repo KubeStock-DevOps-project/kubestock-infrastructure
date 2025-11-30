@@ -142,7 +142,7 @@ variable "worker_ami_id" {
 variable "asg_desired_capacity" {
   description = "Desired number of worker nodes in the ASG"
   type        = number
-  default     = 1 # Start with 1
+  default     = 2 # Start with 2
 }
 
 variable "asg_min_size" {

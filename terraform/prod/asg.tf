@@ -140,71 +140,16 @@ resource "aws_autoscaling_group" "k8s_workers" {
 
   lifecycle {
     create_before_destroy = true
+    # Ignore desired_capacity - Kubernetes Cluster Autoscaler manages this dynamically
+    ignore_changes = [desired_capacity]
   }
 }
 
 # ========================================
-# SCALING POLICIES (Optional - can be managed by Cluster Autoscaler)
+# SCALING
 # ========================================
-
-resource "aws_autoscaling_policy" "scale_up" {
-  name                   = "kubestock-scale-up"
-  autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
-  adjustment_type        = "ChangeInCapacity"
-  scaling_adjustment     = 1
-  cooldown               = 300
-}
-
-resource "aws_autoscaling_policy" "scale_down" {
-  name                   = "kubestock-scale-down"
-  autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
-  adjustment_type        = "ChangeInCapacity"
-  scaling_adjustment     = -1
-  cooldown               = 300
-}
-
-# ========================================
-# CLOUDWATCH ALARMS FOR SCALING
-# ========================================
-
-resource "aws_cloudwatch_metric_alarm" "high_cpu" {
-  alarm_name          = "kubestock-asg-high-cpu"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = 2
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/EC2"
-  period              = 120
-  statistic           = "Average"
-  threshold           = 70
-  alarm_description   = "Scale up when CPU exceeds 70%"
-  alarm_actions       = [aws_autoscaling_policy.scale_up.arn]
-
-  dimensions = {
-    AutoScalingGroupName = aws_autoscaling_group.k8s_workers.name
-  }
-
-  tags = {
-    Name = "kubestock-asg-high-cpu-alarm"
-  }
-}
-
-resource "aws_cloudwatch_metric_alarm" "low_cpu" {
-  alarm_name          = "kubestock-asg-low-cpu"
-  comparison_operator = "LessThanOrEqualToThreshold"
-  evaluation_periods  = 2
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/EC2"
-  period              = 120
-  statistic           = "Average"
-  threshold           = 30
-  alarm_description   = "Scale down when CPU is below 30%"
-  alarm_actions       = [aws_autoscaling_policy.scale_down.arn]
-
-  dimensions = {
-    AutoScalingGroupName = aws_autoscaling_group.k8s_workers.name
-  }
-
-  tags = {
-    Name = "kubestock-asg-low-cpu-alarm"
-  }
-}
+# AWS CPU-based scaling policies are NOT used here.
+# Kubernetes Cluster Autoscaler will manage ASG scaling based on
+# pod scheduling requirements, which is K8s-aware and more appropriate.
+#
+# To deploy Cluster Autoscaler, see: docs/cluster-autoscaler-setup.md (TODO)

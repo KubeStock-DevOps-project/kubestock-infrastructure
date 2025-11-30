@@ -138,13 +138,13 @@ resource "aws_instance" "control_plane" {
 }
 
 # ========================================
-# STATIC WORKER NODES
+# STATIC WORKER NODES (DISABLED - Using ASG)
 # ========================================
-# Static worker nodes managed via Ansible/Kubespray
-# Deployed across 2 AZs (us-east-1b, us-east-1c) for availability
+# Static worker nodes are disabled - using Auto Scaling Group instead
+# Keep resource definition for potential rollback or hybrid setup
 
 resource "aws_instance" "worker" {
-  count         = length(var.worker_private_ips)
+  count         = 0  # Disabled - using ASG for worker nodes
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.worker_instance_type
   subnet_id     = aws_subnet.private[count.index % 2 == 0 ? 1 : 2].id # Alternate between us-east-1b and us-east-1c
