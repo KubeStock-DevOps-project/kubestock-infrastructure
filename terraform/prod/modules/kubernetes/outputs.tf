@@ -1,0 +1,78 @@
+# ========================================
+# KUBERNETES MODULE - OUTPUTS
+# ========================================
+
+# IAM
+output "k8s_node_role_arn" {
+  description = "ARN of the IAM role for K8s nodes"
+  value       = aws_iam_role.k8s_nodes.arn
+}
+
+output "k8s_node_role_name" {
+  description = "Name of the IAM role for K8s nodes"
+  value       = aws_iam_role.k8s_nodes.name
+}
+
+output "k8s_node_instance_profile_name" {
+  description = "Name of the IAM instance profile for K8s nodes"
+  value       = aws_iam_instance_profile.k8s_nodes.name
+}
+
+# Control Plane
+output "control_plane_instance_id" {
+  description = "Instance ID of the control plane"
+  value       = aws_instance.control_plane.id
+}
+
+output "control_plane_private_ip" {
+  description = "Private IP of the control plane"
+  value       = aws_instance.control_plane.private_ip
+}
+
+# Workers
+output "worker_instance_ids" {
+  description = "Instance IDs of static worker nodes"
+  value       = aws_instance.worker[*].id
+}
+
+output "worker_private_ips" {
+  description = "Private IPs of static worker nodes"
+  value       = aws_instance.worker[*].private_ip
+}
+
+# ASG
+output "asg_name" {
+  description = "Name of the worker ASG"
+  value       = aws_autoscaling_group.k8s_workers.name
+}
+
+output "asg_arn" {
+  description = "ARN of the worker ASG"
+  value       = aws_autoscaling_group.k8s_workers.arn
+}
+
+output "launch_template_id" {
+  description = "ID of the launch template"
+  value       = aws_launch_template.k8s_worker.id
+}
+
+# Load Balancer
+output "nlb_dns_name" {
+  description = "DNS name of the NLB for K8s API"
+  value       = aws_lb.k8s_api.dns_name
+}
+
+output "nlb_arn" {
+  description = "ARN of the NLB"
+  value       = aws_lb.k8s_api.arn
+}
+
+output "k8s_api_endpoint" {
+  description = "K8s API endpoint (NLB DNS:6443)"
+  value       = "${aws_lb.k8s_api.dns_name}:6443"
+}
+
+output "target_group_arn" {
+  description = "ARN of the K8s API target group"
+  value       = aws_lb_target_group.k8s_api.arn
+}
