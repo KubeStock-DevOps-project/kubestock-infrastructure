@@ -45,7 +45,8 @@ locals {
     "ms-inventory",
     "ms-supplier",
     "ms-order-management",
-    "ms-test"
+    "ms-test",
+    "ms-identity",
   ]
 }
 
