@@ -274,3 +274,50 @@ output "token_refresh_lambda_name" {
   description = "Name of the token refresh Lambda function"
   value       = module.lambda.lambda_function_name
 }
+
+# ========================================
+# RDS DATABASES
+# ========================================
+
+output "prod_db_endpoint" {
+  description = "Connection endpoint for production database"
+  value       = module.rds.prod_db_endpoint
+}
+
+output "prod_db_address" {
+  description = "Hostname of the production database"
+  value       = module.rds.prod_db_address
+}
+
+output "staging_db_endpoint" {
+  description = "Connection endpoint for staging database"
+  value       = module.rds.staging_db_endpoint
+}
+
+output "staging_db_address" {
+  description = "Hostname of the staging database"
+  value       = module.rds.staging_db_address
+}
+
+output "rds_security_group_id" {
+  description = "Security group ID for RDS instances"
+  value       = module.security.rds_sg_id
+}
+
+output "database_connection_info" {
+  description = "Database connection information for microservices"
+  value = {
+    production = {
+      host     = module.rds.prod_db_address
+      port     = 5432
+      database = module.rds.prod_db_name
+      username = "kubestock_admin"
+    }
+    staging = {
+      host     = module.rds.staging_db_address
+      port     = 5432
+      database = module.rds.staging_db_name
+      username = "kubestock_admin"
+    }
+  }
+}

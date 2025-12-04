@@ -45,6 +45,7 @@ jobs:
           cat > terraform.tfvars <<EOF
           my_ip = "${{ secrets.MY_IP }}"
           ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
+          db_password = "${{ secrets.DB_PASSWORD }}"
           EOF
 
       - name: Terraform Plan and Save
@@ -134,6 +135,7 @@ jobs:
           cat > terraform.tfvars <<EOF
           my_ip = "${{ secrets.MY_IP }}"
           ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
+          db_password = "${{ secrets.DB_PASSWORD }}"
           EOF
 
       - name: Terraform Apply

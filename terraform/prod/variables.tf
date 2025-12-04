@@ -166,3 +166,37 @@ variable "github_org" {
   type        = string
   default     = "KubeStock-DevOps-project"
 }
+
+# ========================================
+# RDS DATABASES
+# ========================================
+
+variable "db_password" {
+  description = "Master password for RDS PostgreSQL databases"
+  type        = string
+  sensitive   = true
+}
+
+variable "prod_db_instance_class" {
+  description = "Instance class for production database (db.t4g.medium: 2 vCPU, 4GB RAM for 5 microservices)"
+  type        = string
+  default     = "db.t4g.medium"
+}
+
+variable "prod_db_multi_az" {
+  description = "Enable Multi-AZ for production database (set true for demo week, ~$105/month vs ~$52/month)"
+  type        = bool
+  default     = false
+}
+
+variable "prod_db_deletion_protection" {
+  description = "Enable deletion protection for production database"
+  type        = bool
+  default     = false
+}
+
+variable "staging_db_instance_class" {
+  description = "Instance class for staging database (db.t4g.small: 2 vCPU, 2GB RAM for CI/CD)"
+  type        = string
+  default     = "db.t4g.small"
+}

@@ -195,6 +195,22 @@ resource "aws_security_group" "workers" {
     security_groups = [aws_security_group.dev_server.id]
   }
 
+  ingress {
+    description     = "NodePort access from bastion"
+    from_port       = 30000
+    to_port         = 32767
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "NodePort access from dev server"
+    from_port       = 30000
+    to_port         = 32767
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
   egress {
     description = "Allow all outbound"
     from_port   = 0
@@ -205,5 +221,52 @@ resource "aws_security_group" "workers" {
 
   tags = {
     Name = "${var.project_name}-sg-workers"
+  }
+}
+
+# ========================================
+# RDS SECURITY GROUP
+# ========================================
+# Allows PostgreSQL access from K8s worker nodes
+
+resource "aws_security_group" "rds" {
+  name        = "${var.project_name}-sg-rds"
+  description = "Security group for RDS PostgreSQL instances"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description     = "PostgreSQL from K8s workers"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.workers.id]
+  }
+
+  ingress {
+    description     = "PostgreSQL from K8s control plane"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.control_plane.id]
+  }
+
+  ingress {
+    description     = "PostgreSQL from dev server (for debugging)"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
+  egress {
+    description = "Allow all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.project_name}-sg-rds"
   }
 }
