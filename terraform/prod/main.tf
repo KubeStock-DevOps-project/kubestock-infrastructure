@@ -177,3 +177,28 @@ module "lambda" {
   log_retention_days     = 14
   refresh_interval_hours = 12
 }
+
+# ========================================
+# RDS MODULE (PostgreSQL Databases)
+# ========================================
+
+module "rds" {
+  source = "./modules/rds"
+
+  project_name       = local.project_name_lower
+  private_subnet_ids = module.networking.private_subnet_ids
+
+  # Security Group (from security module)
+  rds_sg_id = module.security.rds_sg_id
+
+  # Database Credentials
+  db_password = var.db_password
+
+  # Production Database
+  prod_instance_class      = var.prod_db_instance_class
+  prod_multi_az            = var.prod_db_multi_az
+  prod_deletion_protection = var.prod_db_deletion_protection
+
+  # Staging Database
+  staging_instance_class = var.staging_db_instance_class
+}

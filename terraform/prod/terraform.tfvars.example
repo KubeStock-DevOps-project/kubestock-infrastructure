@@ -22,10 +22,26 @@ my_ip = "1.2.3.4/32"
 ssh_public_key_content = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... your-key-here"
 
 # ========================================
-# Database Credentials
+# RDS Database Credentials (REQUIRED)
 # ========================================
-# rds_user     = "kubestock"
-# rds_password = "CHANGE_ME_TO_A_STRONG_PASSWORD"
+# Master password for both production and staging databases
+# Use a strong password with at least 16 characters
+db_password = "CHANGE_ME_TO_A_STRONG_PASSWORD_16_CHARS_MIN"
+
+# ========================================
+# RDS Database Configuration (Optional - defaults provided)
+# ========================================
+# Production: db.t4g.medium (2 vCPU, 4GB RAM) - ~$52/month
+# Staging: db.t4g.small (2 vCPU, 2GB RAM) - ~$26/month
+
+# prod_db_instance_class    = "db.t4g.medium"
+# staging_db_instance_class = "db.t4g.small"
+
+# Enable Multi-AZ for demo week (doubles prod cost to ~$105/month)
+# prod_db_multi_az = false
+
+# Enable deletion protection for production
+# prod_db_deletion_protection = false
 
 # ========================================
 # Networking (Optional - defaults provided)
@@ -45,12 +61,3 @@ ssh_public_key_content = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... your-key-he
 
 # control_plane_private_ip = "10.0.10.21"
 # worker_private_ips       = ["10.0.11.30", "10.0.12.30"]
-
-# ========================================
-# Database (Optional - defaults provided)
-# ========================================
-# rds_instance_class        = "db.t4g.medium"
-# rds_allocated_storage     = 20
-# rds_max_allocated_storage = 100
-
-

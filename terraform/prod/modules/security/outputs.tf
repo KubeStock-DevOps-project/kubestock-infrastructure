@@ -31,3 +31,8 @@ output "nlb_api_sg_id" {
   description = "Security group ID for NLB API"
   value       = aws_security_group.nlb_api.id
 }
+
+output "rds_sg_id" {
+  description = "Security group ID for RDS instances"
+  value       = aws_security_group.rds.id
+}
