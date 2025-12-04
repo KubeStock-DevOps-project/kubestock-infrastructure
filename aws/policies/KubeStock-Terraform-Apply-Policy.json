@@ -59,6 +59,26 @@
             "Resource": "arn:aws:ssm:*:*:parameter/kubestock/*"
         },
         {
+            "Sid": "RDSFullAccess",
+            "Effect": "Allow",
+            "Action": "rds:*",
+            "Resource": [
+                "arn:aws:rds:*:*:db:kubestock-*",
+                "arn:aws:rds:*:*:subgrp:kubestock-*",
+                "arn:aws:rds:*:*:pg:kubestock-*",
+                "arn:aws:rds:*:*:snapshot:kubestock-*"
+            ]
+        },
+        {
+            "Sid": "RDSDescribe",
+            "Effect": "Allow",
+            "Action": [
+                "rds:Describe*",
+                "rds:List*"
+            ],
+            "Resource": "*"
+        },
+        {
             "Sid": "IAMRoleManagement",
             "Effect": "Allow",
             "Action": [
