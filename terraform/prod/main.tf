@@ -47,6 +47,7 @@ locals {
     "ms-order-management",
     "ms-test",
     "ms-identity",
+    "kubestock-frontend"
   ]
 }
 
