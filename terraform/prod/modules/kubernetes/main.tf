@@ -352,7 +352,7 @@ resource "aws_launch_template" "k8s_worker" {
   metadata_options {
     http_endpoint               = "enabled"
     http_tokens                 = "required"
-    http_put_response_hop_limit = 1
+    http_put_response_hop_limit = 2  # Allow containers to access IMDS (required for EBS CSI driver)
   }
 
   monitoring {

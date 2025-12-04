@@ -1,0 +1,56 @@
+---
+# AWS Cloud Controller Manager - DaemonSet
+# Runs on control-plane nodes only
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: aws-cloud-controller-manager
+  namespace: kube-system
+  labels:
+    k8s-app: aws-cloud-controller-manager
+spec:
+  selector:
+    matchLabels:
+      k8s-app: aws-cloud-controller-manager
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        k8s-app: aws-cloud-controller-manager
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - key: node.cloudprovider.kubernetes.io/uninitialized
+          value: "true"
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      serviceAccountName: cloud-controller-manager
+      priorityClassName: system-node-critical
+      hostNetwork: true
+      containers:
+        - name: aws-cloud-controller-manager
+          image: registry.k8s.io/provider-aws/cloud-controller-manager:v1.28.3
+          args:
+            - --v=2
+            - --cloud-provider=aws
+            - --cluster-cidr=10.233.64.0/18
+            - --cluster-name=kubestock
+            - --configure-cloud-routes=false
+            - --controllers=cloud-node,cloud-node-lifecycle
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          env:
+            - name: AWS_REGION
+              value: "ap-south-1"
