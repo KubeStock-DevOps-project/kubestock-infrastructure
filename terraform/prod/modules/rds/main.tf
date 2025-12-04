@@ -144,9 +144,11 @@ resource "aws_db_parameter_group" "postgres" {
   description = "Custom parameter group for ${var.project_name} PostgreSQL"
 
   # Connection pooling optimization for microservices
+  # Note: max_connections is a static parameter, requires apply_method = "pending-reboot"
   parameter {
-    name  = "max_connections"
-    value = "100"
+    name         = "max_connections"
+    value        = "100"
+    apply_method = "pending-reboot"
   }
 
   # Logging (useful for debugging)
