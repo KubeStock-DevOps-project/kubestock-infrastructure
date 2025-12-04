@@ -25,7 +25,9 @@
 				"s3:Get*",
 				"ssm:Describe*",
 				"ssm:Get*",
-				"ssm:List*"
+				"ssm:List*",
+				"rds:Describe*",
+				"rds:List*"
 			],
 			"Resource": "*"
 		},
