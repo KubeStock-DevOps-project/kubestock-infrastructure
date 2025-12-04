@@ -195,6 +195,24 @@ resource "aws_security_group" "workers" {
     security_groups = [aws_security_group.dev_server.id]
   }
 
+  # NodePort access from bastion for ArgoCD UI and other services
+  ingress {
+    description     = "NodePort access from bastion"
+    from_port       = 30000
+    to_port         = 32767
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  # NodePort access from dev server for testing
+  ingress {
+    description     = "NodePort access from dev server"
+    from_port       = 30000
+    to_port         = 32767
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
   egress {
     description = "Allow all outbound"
     from_port   = 0
