@@ -321,3 +321,44 @@ output "database_connection_info" {
     }
   }
 }
+
+# ========================================
+# SECRETS MANAGER
+# ========================================
+
+output "db_secret_arns" {
+  description = "Secrets Manager ARNs for database credentials by environment"
+  value       = module.secrets.db_secret_arns
+}
+
+output "asgardeo_secret_arns" {
+  description = "Secrets Manager ARNs for Asgardeo credentials by environment"
+  value       = module.secrets.asgardeo_secret_arns
+}
+
+output "db_secret_names" {
+  description = "Secrets Manager names for database credentials by environment"
+  value       = module.secrets.db_secret_names
+}
+
+output "asgardeo_secret_names" {
+  description = "Secrets Manager names for Asgardeo credentials by environment"
+  value       = module.secrets.asgardeo_secret_names
+}
+
+output "external_secrets_user_name" {
+  description = "IAM user for External Secrets Operator"
+  value       = module.secrets.external_secrets_user_name
+}
+
+output "external_secrets_access_key_id" {
+  description = "Access key ID for External Secrets Operator"
+  value       = module.secrets.external_secrets_access_key_id
+  sensitive   = true
+}
+
+output "external_secrets_secret_access_key" {
+  description = "Secret access key for External Secrets Operator"
+  value       = module.secrets.external_secrets_secret_access_key
+  sensitive   = true
+}

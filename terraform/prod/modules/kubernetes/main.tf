@@ -149,6 +149,68 @@ resource "aws_iam_role_policy_attachment" "k8s_controllers" {
   policy_arn = aws_iam_policy.k8s_controllers.arn
 }
 
+# Allow worker nodes to pull images from ECR
+resource "aws_iam_policy" "k8s_ecr_pull" {
+  name        = "${var.project_name}-k8s-ecr-pull"
+  description = "Allow Kubernetes nodes to pull images from ECR"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:DescribeRepositories",
+          "ecr:ListImages"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "${var.project_name}-k8s-ecr-pull"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "k8s_ecr_pull" {
+  role       = aws_iam_role.k8s_nodes.name
+  policy_arn = aws_iam_policy.k8s_ecr_pull.arn
+}
+
+# External Secrets Operator access to AWS Secrets Manager (used via node IAM role)
+resource "aws_iam_policy" "k8s_external_secrets" {
+  name        = "${var.project_name}-k8s-external-secrets-policy"
+  description = "Allow External Secrets to read kubestock secrets from AWS Secrets Manager"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = "arn:aws:secretsmanager:${var.aws_region}:${var.aws_account_id}:secret:kubestock/*"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "${var.project_name}-k8s-external-secrets-policy"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "k8s_external_secrets" {
+  role       = aws_iam_role.k8s_nodes.name
+  policy_arn = aws_iam_policy.k8s_external_secrets.arn
+}
+
 resource "aws_iam_role_policy_attachment" "k8s_nodes_ssm" {
   role       = aws_iam_role.k8s_nodes.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
