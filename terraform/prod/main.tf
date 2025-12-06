@@ -41,13 +41,12 @@ locals {
   project_name_lower = lower(var.project_name)
 
   microservices = [
-    "ms-product",
-    "ms-inventory",
-    "ms-supplier",
-    "ms-order-management",
-    "ms-test",
-    "ms-identity",
-    "kubestock-frontend"
+    "kubestock/ms-product",
+    "kubestock/ms-inventory",
+    "kubestock/ms-supplier",
+    "kubestock/ms-order-management",
+    "kubestock/ms-identity",
+    "kubestock/web"
   ]
 }
 
