@@ -41,6 +41,18 @@
 			"Resource": "*"
 		},
 		{
+			"Sid": "SecretsManagerReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"secretsmanager:DescribeSecret",
+				"secretsmanager:GetSecretValue",
+				"secretsmanager:ListSecrets",
+				"secretsmanager:ListSecretVersionIds",
+				"secretsmanager:GetResourcePolicy"
+			],
+			"Resource": "*"
+		},
+		{
 			"Sid": "S3BackendAccess",
 			"Effect": "Allow",
 			"Action": [
