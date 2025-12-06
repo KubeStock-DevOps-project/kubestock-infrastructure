@@ -137,6 +137,10 @@ resource "aws_lambda_function" "token_refresh" {
     }
   }
 
+  lifecycle {
+    ignore_changes = [source_code_hash]
+  }
+
   tags = {
     Name = "${var.project_name}-refresh-join-token"
   }

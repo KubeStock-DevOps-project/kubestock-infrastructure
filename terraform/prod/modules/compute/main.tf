@@ -40,16 +40,20 @@ resource "aws_key_pair" "main" {
 # ========================================
 
 resource "aws_instance" "bastion" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.bastion_instance_type
-  subnet_id              = var.public_subnet_ids[0]
-  vpc_security_group_ids = [var.bastion_sg_id]
-  key_name               = aws_key_pair.main.key_name
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = var.bastion_instance_type
+  subnet_id                   = var.public_subnet_ids[0]
+  vpc_security_group_ids      = [var.bastion_sg_id]
+  key_name                    = aws_key_pair.main.key_name
   associate_public_ip_address = false
 
   root_block_device {
     volume_size = 8
     volume_type = "gp3"
+  }
+
+  lifecycle {
+    ignore_changes = [associate_public_ip_address]
   }
 
   tags = {
@@ -91,39 +95,11 @@ resource "aws_instance" "dev_server" {
     Role = "development"
   }
 
-  user_data = <<-EOF
-              #!/bin/bash
-              set -euo pipefail
+  user_data = file("${path.module}/dev_server_user_data.sh")
 
-              sudo apt update && sudo apt upgrade -y
-              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-              sudo apt install -y unzip
-              unzip awscliv2.zip
-              sudo ./aws/install
-              aws --version
-
-              sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
-              wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
-              gpg --no-default-keyring --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg --fingerprint
-
-              ARCH=$$(dpkg --print-architecture)
-              CODENAME=$$(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs)
-              echo "deb [arch=$${ARCH} signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $${CODENAME} main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-
-              sudo apt update
-              sudo apt-get install terraform -y
-
-              sudo apt install -y software-properties-common
-              sudo add-apt-repository --yes --update ppa:ansible/ansible
-              sudo apt install -y ansible
-              ansible --version
-
-              sudo apt install -y python3 python3-pip
-              sudo apt install python3.10-venv
-              sudo apt install -y jq
-              sudo apt install -y unzip
-              exit 0
-              EOF
+  lifecycle {
+    ignore_changes = [user_data, associate_public_ip_address]
+  }
 }
 
 resource "aws_eip" "dev_server" {
