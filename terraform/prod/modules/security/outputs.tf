@@ -28,7 +28,7 @@ output "workers_sg_id" {
 }
 
 output "nlb_api_sg_id" {
-  description = "Security group ID for NLB API"
+  description = "Security group ID for NLB (API + staging apps)"
   value       = aws_security_group.nlb_api.id
 }
 

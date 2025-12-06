@@ -487,11 +487,11 @@ resource "aws_autoscaling_group" "k8s_workers" {
 }
 
 # ========================================
-# NETWORK LOAD BALANCER FOR K8S API
+# NETWORK LOAD BALANCER FOR K8S API + APPS
 # ========================================
 
 resource "aws_lb" "k8s_api" {
-  name               = "${var.project_name}-nlb-api"
+  name               = "${var.project_name}-nlb"
   load_balancer_type = "network"
   internal           = true
   security_groups    = [var.nlb_api_sg_id]
@@ -501,9 +501,13 @@ resource "aws_lb" "k8s_api" {
   enable_cross_zone_load_balancing = true
 
   tags = {
-    Name = "${var.project_name}-nlb-api"
+    Name = "${var.project_name}-nlb"
   }
 }
+
+# ========================================
+# TARGET GROUP - K8S API
+# ========================================
 
 resource "aws_lb_target_group" "k8s_api" {
   name        = "${var.project_name}-k8s-api-tg"
@@ -543,4 +547,137 @@ resource "aws_lb_target_group_attachment" "k8s_api" {
   target_group_arn = aws_lb_target_group.k8s_api.arn
   target_id        = aws_instance.control_plane.id
   port             = 6443
+}
+
+# ========================================
+# TARGET GROUP - STAGING FRONTEND (HTTP)
+# ========================================
+
+resource "aws_lb_target_group" "staging_frontend_http" {
+  name        = "${var.project_name}-staging-fe-http"
+  port        = 30080
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "instance"
+
+  health_check {
+    enabled             = true
+    protocol            = "TCP"
+    port                = "30080"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    interval            = 30
+  }
+
+  deregistration_delay = 30
+
+  tags = {
+    Name = "${var.project_name}-staging-fe-http-tg"
+  }
+}
+
+resource "aws_lb_listener" "staging_frontend_http" {
+  load_balancer_arn = aws_lb.k8s_api.arn
+  port              = 80
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.staging_frontend_http.arn
+  }
+}
+
+# ========================================
+# TARGET GROUP - STAGING FRONTEND (HTTPS)
+# ========================================
+
+resource "aws_lb_target_group" "staging_frontend_https" {
+  name        = "${var.project_name}-staging-fe-https"
+  port        = 30444
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "instance"
+
+  health_check {
+    enabled             = true
+    protocol            = "TCP"
+    port                = "30444"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    interval            = 30
+  }
+
+  deregistration_delay = 30
+
+  tags = {
+    Name = "${var.project_name}-staging-fe-https-tg"
+  }
+}
+
+resource "aws_lb_listener" "staging_frontend_https" {
+  load_balancer_arn = aws_lb.k8s_api.arn
+  port              = 443
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.staging_frontend_https.arn
+  }
+}
+
+# ========================================
+# TARGET GROUP - ARGOCD UI
+# ========================================
+
+resource "aws_lb_target_group" "argocd_ui" {
+  name        = "${var.project_name}-argocd-ui"
+  port        = 30443
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "instance"
+
+  health_check {
+    enabled             = true
+    protocol            = "TCP"
+    port                = "30443"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    interval            = 30
+  }
+
+  deregistration_delay = 30
+
+  tags = {
+    Name = "${var.project_name}-argocd-ui-tg"
+  }
+}
+
+resource "aws_lb_listener" "argocd_ui" {
+  load_balancer_arn = aws_lb.k8s_api.arn
+  port              = 8443
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.argocd_ui.arn
+  }
+}
+
+# ========================================
+# TARGET GROUP ATTACHMENTS - ASG WORKERS
+# ========================================
+
+resource "aws_autoscaling_attachment" "staging_frontend_http" {
+  autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
+  lb_target_group_arn    = aws_lb_target_group.staging_frontend_http.arn
+}
+
+resource "aws_autoscaling_attachment" "staging_frontend_https" {
+  autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
+  lb_target_group_arn    = aws_lb_target_group.staging_frontend_https.arn
+}
+
+resource "aws_autoscaling_attachment" "argocd_ui" {
+  autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
+  lb_target_group_arn    = aws_lb_target_group.argocd_ui.arn
 }
