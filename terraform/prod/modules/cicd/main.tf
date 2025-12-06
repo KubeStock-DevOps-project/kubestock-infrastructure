@@ -33,18 +33,14 @@ resource "aws_iam_role" "github_actions_ecr" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = concat(
-              # Allow environment-specific deployments (staging/production)
-              [
-                for service in var.microservices :
-                "repo:${var.github_org}/${service}:environment:*"
-              ],
-              # Allow main branch builds (for CI/CD pipeline)
-              [
-                for service in var.microservices :
-                "repo:${var.github_org}/${service}:ref:refs/heads/main"
-              ]
-            )
+            "token.actions.githubusercontent.com:sub" = [
+              # Monorepo - allow environment-specific deployments
+              "repo:${var.github_org}/kubestock-core:environment:*",
+              # Monorepo - allow main branch builds
+              "repo:${var.github_org}/kubestock-core:ref:refs/heads/main",
+              # Monorepo - allow all branches (for testing)
+              "repo:${var.github_org}/kubestock-core:ref:refs/heads/*"
+            ]
           }
         }
       }
