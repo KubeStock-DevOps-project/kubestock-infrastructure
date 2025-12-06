@@ -80,8 +80,6 @@ resource "aws_instance" "dev_server" {
   vpc_security_group_ids = [var.dev_server_sg_id]
   key_name               = aws_key_pair.main.key_name
 
-  associate_public_ip_address = true
-
   root_block_device {
     volume_size = var.dev_server_volume_size
     volume_type = "gp3"
@@ -125,4 +123,13 @@ resource "aws_instance" "dev_server" {
               sudo apt install -y unzip
               exit 0
               EOF
+}
+
+resource "aws_eip" "dev_server" {
+  domain   = "vpc"
+  instance = aws_instance.dev_server.id
+
+  tags = {
+    Name = "${var.project_name}-dev-server-eip"
+  }
 }

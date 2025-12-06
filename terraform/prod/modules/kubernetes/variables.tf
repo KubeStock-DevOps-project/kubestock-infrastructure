@@ -54,7 +54,7 @@ variable "k8s_common_sg_id" {
 }
 
 variable "nlb_api_sg_id" {
-  description = "Security group ID for NLB API"
+  description = "Security group ID for NLB (API + staging apps)"
   type        = string
 }
 

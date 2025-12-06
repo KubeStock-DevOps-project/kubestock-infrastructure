@@ -34,8 +34,12 @@ resource "aws_iam_role" "github_actions_ecr" {
           }
           StringLike = {
             "token.actions.githubusercontent.com:sub" = [
-              for service in var.microservices :
-              "repo:${var.github_org}/${service}:environment:${var.environment}"
+              # Monorepo - allow environment-specific deployments
+              "repo:${var.github_org}/kubestock-core:environment:*",
+              # Monorepo - allow main branch builds
+              "repo:${var.github_org}/kubestock-core:ref:refs/heads/main",
+              # Monorepo - allow all branches (for testing)
+              "repo:${var.github_org}/kubestock-core:ref:refs/heads/*"
             ]
           }
         }

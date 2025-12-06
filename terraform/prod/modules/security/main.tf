@@ -94,15 +94,16 @@ resource "aws_security_group" "k8s_common" {
 }
 
 # ========================================
-# NLB API SECURITY GROUP
+# NLB SECURITY GROUP (API + STAGING APPS)
 # ========================================
 # NOTE: This must be created before control_plane SG due to dependency
 
 resource "aws_security_group" "nlb_api" {
-  name        = "${var.project_name}-sg-nlb-api"
-  description = "Security group for NLB - K8s API access from bastion"
+  name        = "${var.project_name}-sg-nlb"
+  description = "Security group for NLB - K8s API, staging apps, ArgoCD UI"
   vpc_id      = var.vpc_id
 
+  # K8s API access
   ingress {
     description     = "K8s API from bastion"
     from_port       = 6443
@@ -119,18 +120,80 @@ resource "aws_security_group" "nlb_api" {
     security_groups = [aws_security_group.dev_server.id]
   }
 
+  # Staging frontend HTTP
+  ingress {
+    description     = "HTTP from bastion"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "HTTP from dev server"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
+  # Staging frontend HTTPS
+  ingress {
+    description     = "HTTPS from bastion"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "HTTPS from dev server"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
+  # ArgoCD UI
+  ingress {
+    description     = "ArgoCD UI from bastion"
+    from_port       = 8443
+    to_port         = 8443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "ArgoCD UI from dev server"
+    from_port       = 8443
+    to_port         = 8443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
+  # Egress rules
   egress {
-    description = "Forward K8s API to control plane targets"
+    description = "Forward K8s API to control plane"
     from_port   = 6443
     to_port     = 6443
     protocol    = "tcp"
     cidr_blocks = var.private_subnet_cidrs
   }
 
+  egress {
+    description = "Forward to worker nodes (NodePort range)"
+    from_port   = 30000
+    to_port     = 32767
+    protocol    = "tcp"
+    cidr_blocks = var.private_subnet_cidrs
+  }
+
   tags = {
-    Name = "${var.project_name}-sg-nlb-api"
+    Name = "${var.project_name}-sg-nlb"
   }
 }
+
+
 
 # ========================================
 # CONTROL PLANE SECURITY GROUP
@@ -256,6 +319,14 @@ resource "aws_security_group" "rds" {
     to_port         = 5432
     protocol        = "tcp"
     security_groups = [aws_security_group.dev_server.id]
+  }
+
+  ingress {
+    description = "PostgreSQL from bastion (for debugging)"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    security_groups = [aws_security_group.bastion.id]
   }
 
   egress {

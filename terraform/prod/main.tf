@@ -41,13 +41,12 @@ locals {
   project_name_lower = lower(var.project_name)
 
   microservices = [
-    "ms-product",
-    "ms-inventory",
-    "ms-supplier",
-    "ms-order-management",
-    "ms-test",
-    "ms-identity",
-    "kubestock-frontend"
+    "kubestock/ms-product",
+    "kubestock/ms-inventory",
+    "kubestock/ms-supplier",
+    "kubestock/ms-order-management",
+    "kubestock/ms-identity",
+    "kubestock/web"
   ]
 }
 
@@ -201,4 +200,17 @@ module "rds" {
 
   # Staging Database
   staging_instance_class = var.staging_db_instance_class
+}
+
+# ========================================
+# SECRETS MANAGER MODULE
+# ========================================
+
+module "secrets" {
+  source = "./modules/secrets"
+
+  project_name   = local.project_name_lower
+  environments   = ["staging", "production"]
+  aws_region     = data.aws_region.current.name
+  aws_account_id = data.aws_caller_identity.current.account_id
 }
