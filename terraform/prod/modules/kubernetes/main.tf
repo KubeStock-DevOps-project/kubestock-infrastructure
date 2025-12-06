@@ -423,6 +423,7 @@ resource "aws_launch_template" "k8s_worker" {
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes        = [user_data]
   }
 
   tags = {
