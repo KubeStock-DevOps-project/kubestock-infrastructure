@@ -28,8 +28,8 @@ output "dev_server_instance_id" {
 }
 
 output "dev_server_public_ip" {
-  description = "Public IP of the dev server"
-  value       = aws_instance.dev_server.public_ip
+  description = "Elastic IP of the dev server"
+  value       = aws_eip.dev_server.public_ip
 }
 
 output "dev_server_instance_state" {

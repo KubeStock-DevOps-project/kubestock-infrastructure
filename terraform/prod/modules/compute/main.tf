@@ -45,6 +45,7 @@ resource "aws_instance" "bastion" {
   subnet_id              = var.public_subnet_ids[0]
   vpc_security_group_ids = [var.bastion_sg_id]
   key_name               = aws_key_pair.main.key_name
+  associate_public_ip_address = false
 
   root_block_device {
     volume_size = 8
@@ -70,7 +71,6 @@ resource "aws_eip" "bastion" {
 # DEVELOPMENT SERVER
 # ========================================
 # NOTE: For running VS Code Server, Terraform, Ansible, etc.
-# No Elastic IP - costs $0 when stopped (only storage costs)
 # Start/stop as needed for development work
 
 resource "aws_instance" "dev_server" {
@@ -79,6 +79,7 @@ resource "aws_instance" "dev_server" {
   subnet_id              = var.public_subnet_ids[0]
   vpc_security_group_ids = [var.dev_server_sg_id]
   key_name               = aws_key_pair.main.key_name
+  associate_public_ip_address = false
 
   root_block_device {
     volume_size = var.dev_server_volume_size
