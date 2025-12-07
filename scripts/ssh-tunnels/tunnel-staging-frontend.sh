@@ -3,16 +3,24 @@
 # KubeStock SSH Tunnel to Staging Frontend (via NLB)
 # ==================================================
 
-# Path to your private key
-KEY_PATH="${HOME}/.ssh/kubestock-key"
+# Path to your private key (override with KUBESTOCK_SSH_KEY env var)
+KEY_PATH="${KUBESTOCK_SSH_KEY:-${HOME}/.ssh/id_ed25519}"
 
-# Bastion host (replace with your bastion IP)
-BASTION="ubuntu@<BASTION_IP>"
+# Bastion host (set KUBESTOCK_BASTION_IP env var)
+if [ -z "${KUBESTOCK_BASTION_IP}" ]; then
+    echo "ERROR: KUBESTOCK_BASTION_IP environment variable not set"
+    echo "Please set it: export KUBESTOCK_BASTION_IP=13.202.52.3"
+    exit 1
+fi
+BASTION="ubuntu@${KUBESTOCK_BASTION_IP}"
 
-# Get NLB DNS from Terraform output first:
-#   cd infrastructure/terraform/prod
-#   terraform output -raw nlb_staging_dns_name
-REMOTE_NLB="<NLB_STAGING_DNS>"
+# NLB DNS (set KUBESTOCK_NLB_DNS env var)
+if [ -z "${KUBESTOCK_NLB_DNS}" ]; then
+    echo "ERROR: KUBESTOCK_NLB_DNS environment variable not set"
+    echo "Please set it: export KUBESTOCK_NLB_DNS=kubestock-nlb-xxx.elb.ap-south-1.amazonaws.com"
+    exit 1
+fi
+REMOTE_NLB="${KUBESTOCK_NLB_DNS}"
 REMOTE_PORT=80
 
 # Local port

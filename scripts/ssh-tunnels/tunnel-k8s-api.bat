@@ -3,16 +3,24 @@ REM ==================================================
 REM KubeStock SSH Tunnel to Kubernetes API (via NLB)
 REM ==================================================
 
-REM Path to your private key
-set KEY_PATH=C:\Users\%USERNAME%\.ssh\kubestock-key
+REM Path to your private key (override with KUBESTOCK_SSH_KEY env var)
+if not defined KUBESTOCK_SSH_KEY set KUBESTOCK_SSH_KEY=C:\Users\%USERNAME%\.ssh\id_ed25519
 
-REM Bastion host (replace with your bastion IP)
-set BASTION=ubuntu@<BASTION_IP>
+REM Bastion host (set KUBESTOCK_BASTION_IP env var)
+if not defined KUBESTOCK_BASTION_IP (
+    echo ERROR: KUBESTOCK_BASTION_IP environment variable not set
+    echo Please set it: set KUBESTOCK_BASTION_IP=13.202.52.3
+    exit /b 1
+)
+set BASTION=ubuntu@%KUBESTOCK_BASTION_IP%
 
-REM Get NLB DNS from Terraform output first:
-REM   cd infrastructure/terraform/prod
-REM   terraform output -raw nlb_dns_name
-set REMOTE_API=<NLB_API_DNS>
+REM NLB DNS (set KUBESTOCK_NLB_DNS env var)
+if not defined KUBESTOCK_NLB_DNS (
+    echo ERROR: KUBESTOCK_NLB_DNS environment variable not set
+    echo Please set it: set KUBESTOCK_NLB_DNS=kubestock-nlb-xxx.elb.ap-south-1.amazonaws.com
+    exit /b 1
+)
+set REMOTE_API=%KUBESTOCK_NLB_DNS%
 set REMOTE_PORT=6443
 
 REM Local port
@@ -31,4 +39,4 @@ echo Press Ctrl+C to stop
 echo.
 
 REM Start SSH tunnel (keep it running)
-ssh -i "%KEY_PATH%" -L %LOCAL_PORT%:%REMOTE_API%:%REMOTE_PORT% %BASTION% -N
+ssh -i "%KUBESTOCK_SSH_KEY%" -L %LOCAL_PORT%:%REMOTE_API%:%REMOTE_PORT% %BASTION% -N

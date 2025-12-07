@@ -48,41 +48,68 @@ localhost:6443  →  SSH Tunnel  →  nlb:6443  →  Control Plane 6443
 
 ## Setup Instructions
 
-### 1. Get NLB DNS and Bastion IP
+### 1. Set Environment Variables
 
-From the Terraform directory:
-
-```bash
-cd infrastructure/terraform/prod
-
-# Get NLB DNS (single NLB for all services)
-terraform output -raw nlb_dns_name
-
-# Get bastion public IP
-terraform output -raw bastion_public_ip
-```
-
-### 2. Configure Scripts
-
-Edit each script and replace:
-- `<BASTION_IP>` with your bastion public IP
-- `<NLB_API_DNS>` with NLB DNS (for k8s-api tunnel)
-- `<NLB_STAGING_DNS>` with NLB DNS (for argocd and frontend tunnels)
-
-**Note:** Since we use a single NLB, `<NLB_API_DNS>` and `<NLB_STAGING_DNS>` will be the same value.
-
-### 3. Set Key Path
-
-**Windows (.bat files):**
-- Default: `C:\Users\%USERNAME%\.ssh\kubestock-key`
-- Update `KEY_PATH` variable if your key is elsewhere
+All scripts use environment variables for configuration. Set these once and the scripts will work without editing.
 
 **Linux/Mac (.sh files):**
-- Default: `${HOME}/.ssh/kubestock-key`
-- Update `KEY_PATH` variable if your key is elsewhere
-- Make script executable: `chmod +x tunnel-*.sh`
+
+```bash
+# Get values from Terraform
+cd infrastructure/terraform/prod
+
+# Set bastion IP (REQUIRED)
+export KUBESTOCK_BASTION_IP=$(terraform output -raw bastion_public_ip)
+
+# Set NLB DNS (REQUIRED - single NLB for all services)
+export KUBESTOCK_NLB_DNS=$(terraform output -raw nlb_dns_name)
+
+# Set SSH key path (OPTIONAL - defaults to ~/.ssh/id_ed25519)
+export KUBESTOCK_SSH_KEY="${HOME}/.ssh/id_ed25519"
+```
+
+To make these permanent, add to `~/.bashrc` or `~/.zshrc`:
+
+```bash
+# KubeStock Environment Variables
+export KUBESTOCK_BASTION_IP="13.202.52.3"
+export KUBESTOCK_NLB_DNS="kubestock-nlb-e316550036e3d7d8.elb.ap-south-1.amazonaws.com"
+export KUBESTOCK_SSH_KEY="${HOME}/.ssh/id_ed25519"
+```
+
+**Windows (.bat files):**
+
+```cmd
+REM Get values from Terraform (in PowerShell)
+cd infrastructure\terraform\prod
+terraform output -raw bastion_public_ip
+terraform output -raw nlb_dns_name
+
+REM Set environment variables (REQUIRED)
+set KUBESTOCK_BASTION_IP=13.202.52.3
+set KUBESTOCK_NLB_DNS=kubestock-nlb-e316550036e3d7d8.elb.ap-south-1.amazonaws.com
+
+REM Set SSH key path (OPTIONAL - defaults to %USERPROFILE%\.ssh\id_ed25519)
+set KUBESTOCK_SSH_KEY=C:\Users\%USERNAME%\.ssh\id_ed25519
+```
+
+To make these permanent, set as system environment variables:
+1. Open System Properties → Environment Variables
+2. Add User Variables:
+   - `KUBESTOCK_BASTION_IP` = `13.202.52.3`
+   - `KUBESTOCK_NLB_DNS` = `kubestock-nlb-xxx.elb.ap-south-1.amazonaws.com`
+   - `KUBESTOCK_SSH_KEY` = `C:\Users\YourName\.ssh\id_ed25519` (optional)
+
+### 2. Make Scripts Executable (Linux/Mac)
+
+```bash
+chmod +x infrastructure/scripts/ssh-tunnels/tunnel-*.sh
+```
+
 
 ## Usage Examples
+
+Once environment variables are set, simply run the scripts - no editing required!
 
 ### Windows
 
@@ -90,11 +117,20 @@ Edit each script and replace:
 REM Start ArgoCD tunnel
 tunnel-argocd.bat
 
-REM Start staging frontend tunnel
+REM Start staging frontend tunnel (HTTP)
 tunnel-staging-frontend.bat
+
+REM Start staging frontend tunnel (HTTPS)
+tunnel-staging-frontend-https.bat
 
 REM Start K8s API tunnel
 tunnel-k8s-api.bat
+```
+
+If environment variables are not set, scripts will show helpful error messages:
+```cmd
+ERROR: KUBESTOCK_BASTION_IP environment variable not set
+Please set it: set KUBESTOCK_BASTION_IP=13.202.52.3
 ```
 
 ### Linux/Mac
@@ -103,11 +139,20 @@ tunnel-k8s-api.bat
 # Start ArgoCD tunnel
 ./tunnel-argocd.sh
 
-# Start staging frontend tunnel
+# Start staging frontend tunnel (HTTP)
 ./tunnel-staging-frontend.sh
+
+# Start staging frontend tunnel (HTTPS)
+./tunnel-staging-frontend-https.sh
 
 # Start K8s API tunnel
 ./tunnel-k8s-api.sh
+```
+
+If environment variables are not set, scripts will show helpful error messages:
+```bash
+ERROR: KUBESTOCK_BASTION_IP environment variable not set
+Please set it: export KUBESTOCK_BASTION_IP=13.202.52.3
 ```
 
 ## Architecture
@@ -135,13 +180,44 @@ All services use a single internal NLB with multiple listeners:
 ## Troubleshooting
 
 ### Connection Refused
-- Check bastion IP is correct
-- Verify NLB DNS is correct
+- Check bastion IP is correct: `echo $KUBESTOCK_BASTION_IP` (Linux/Mac) or `echo %KUBESTOCK_BASTION_IP%` (Windows)
+- Verify NLB DNS is correct: `echo $KUBESTOCK_NLB_DNS` (Linux/Mac) or `echo %KUBESTOCK_NLB_DNS%` (Windows)
 - Ensure security groups allow traffic from bastion to NLB
 
 ### SSH Permission Denied
-- Check key path is correct
-- Verify key permissions: `chmod 600 ~/.ssh/kubestock-key` (Linux/Mac)
+- Check key path is correct: `echo $KUBESTOCK_SSH_KEY` (Linux/Mac) or `echo %KUBESTOCK_SSH_KEY%` (Windows)
+- Verify key permissions: `chmod 600 ~/.ssh/id_ed25519` (Linux/Mac)
+- Ensure key exists: `ls -la ~/.ssh/id_ed25519` (Linux/Mac)
+
+### Environment Variables Not Set
+If you see errors like "KUBESTOCK_BASTION_IP environment variable not set":
+
+**Linux/Mac:**
+```bash
+# Quick setup (current shell only)
+export KUBESTOCK_BASTION_IP=$(cd infrastructure/terraform/prod && terraform output -raw bastion_public_ip)
+export KUBESTOCK_NLB_DNS=$(cd infrastructure/terraform/prod && terraform output -raw nlb_dns_name)
+
+# Verify
+echo "Bastion: $KUBESTOCK_BASTION_IP"
+echo "NLB DNS: $KUBESTOCK_NLB_DNS"
+```
+
+**Windows:**
+```cmd
+REM Get values from Terraform
+cd infrastructure\terraform\prod
+terraform output -raw bastion_public_ip
+terraform output -raw nlb_dns_name
+
+REM Set for current session
+set KUBESTOCK_BASTION_IP=<paste_bastion_ip>
+set KUBESTOCK_NLB_DNS=<paste_nlb_dns>
+
+REM Verify
+echo %KUBESTOCK_BASTION_IP%
+echo %KUBESTOCK_NLB_DNS%
+```
 - Ensure bastion has your public key in `~/.ssh/authorized_keys`
 
 ### Tunnel Works but Service Unreachable
