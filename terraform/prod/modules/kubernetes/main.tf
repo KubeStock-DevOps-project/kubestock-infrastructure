@@ -544,12 +544,6 @@ resource "aws_lb_listener" "k8s_api" {
   }
 }
 
-resource "aws_lb_target_group_attachment" "k8s_api" {
-  target_group_arn = aws_lb_target_group.k8s_api.arn
-  target_id        = aws_instance.control_plane.id
-  port             = 6443
-}
-
 # ========================================
 # TARGET GROUP - STAGING FRONTEND (HTTP)
 # ========================================
@@ -681,4 +675,10 @@ resource "aws_autoscaling_attachment" "staging_frontend_https" {
 resource "aws_autoscaling_attachment" "argocd_ui" {
   autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
   lb_target_group_arn    = aws_lb_target_group.argocd_ui.arn
+}
+
+resource "aws_lb_target_group_attachment" "k8s_api" {
+  target_group_arn = aws_lb_target_group.k8s_api.arn
+  target_id        = aws_instance.control_plane.id
+  port             = 6443
 }
