@@ -172,7 +172,7 @@ resource "aws_security_group" "nlb_api" {
   }
 
   egress {
-    description = "Allow all other outbound"
+    description = "Allow all outbound"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
