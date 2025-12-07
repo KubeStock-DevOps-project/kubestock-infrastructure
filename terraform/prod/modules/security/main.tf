@@ -171,21 +171,12 @@ resource "aws_security_group" "nlb_api" {
     security_groups = [aws_security_group.dev_server.id]
   }
 
-  # Egress rules
   egress {
-    description = "Forward K8s API to control plane"
-    from_port   = 6443
-    to_port     = 6443
-    protocol    = "tcp"
-    cidr_blocks = var.private_subnet_cidrs
-  }
-
-  egress {
-    description = "Forward to worker nodes (NodePort range)"
-    from_port   = 30000
-    to_port     = 32767
-    protocol    = "tcp"
-    cidr_blocks = var.private_subnet_cidrs
+    description = "Allow all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
