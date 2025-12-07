@@ -274,6 +274,14 @@ resource "aws_security_group" "workers" {
     security_groups = [aws_security_group.dev_server.id]
   }
 
+  ingress {
+    description     = "NodePort access from NLB (health checks + traffic)"
+    from_port       = 30000
+    to_port         = 32767
+    protocol        = "tcp"
+    security_groups = [aws_security_group.nlb_api.id]
+  }
+
   egress {
     description = "Allow all outbound"
     from_port   = 0
