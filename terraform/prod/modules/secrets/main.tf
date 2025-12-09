@@ -53,18 +53,37 @@ resource "aws_iam_user" "external_secrets" {
 
 resource "aws_iam_policy" "external_secrets_read" {
   name        = "${var.project_name}-external-secrets-read"
-  description = "Allow External Secrets Operator to read kubestock secrets"
+  description = "Allow External Secrets Operator to read kubestock secrets and ECR tokens"
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "SecretsManagerAccess"
         Effect = "Allow"
         Action = [
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret"
         ]
         Resource = "arn:aws:secretsmanager:${var.aws_region}:${var.aws_account_id}:secret:${var.project_name}/*"
+      },
+      {
+        Sid    = "ECRAuthorizationToken"
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ECRPullImages"
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchGetImage",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchCheckLayerAvailability"
+        ]
+        Resource = "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/${var.project_name}/*"
       }
     ]
   })
