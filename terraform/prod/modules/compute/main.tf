@@ -78,11 +78,11 @@ resource "aws_eip" "bastion" {
 # Start/stop as needed for development work
 
 resource "aws_instance" "dev_server" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.dev_server_instance_type
-  subnet_id              = var.public_subnet_ids[0]
-  vpc_security_group_ids = [var.dev_server_sg_id]
-  key_name               = aws_key_pair.main.key_name
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = var.dev_server_instance_type
+  subnet_id                   = var.public_subnet_ids[0]
+  vpc_security_group_ids      = [var.dev_server_sg_id]
+  key_name                    = aws_key_pair.main.key_name
   associate_public_ip_address = false
 
   root_block_device {

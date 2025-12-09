@@ -63,8 +63,8 @@ resource "aws_db_instance" "production" {
   performance_insights_enabled = false
 
   # Deletion Protection
-  deletion_protection = var.prod_deletion_protection
-  skip_final_snapshot = var.skip_final_snapshot
+  deletion_protection       = var.prod_deletion_protection
+  skip_final_snapshot       = var.skip_final_snapshot
   final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.project_name}-prod-final-snapshot"
 
   # Apply changes immediately (for demo flexibility)

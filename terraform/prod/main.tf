@@ -214,3 +214,74 @@ module "secrets" {
   aws_region     = data.aws_region.current.name
   aws_account_id = data.aws_caller_identity.current.account_id
 }
+
+# ========================================
+# DNS + ACM MODULE (Route 53 & SSL Certificate)
+# ========================================
+# Creates hosted zone and certificate only
+# A record is created separately after ALB
+
+module "dns" {
+  source = "./modules/dns"
+
+  project_name       = local.project_name_lower
+  domain_name        = var.domain_name
+  create_hosted_zone = var.create_hosted_zone
+  hosted_zone_id     = var.hosted_zone_id
+  alb_dns_name       = "" # A record created separately below
+  alb_zone_id        = ""
+  environment        = var.environment
+}
+
+# ========================================
+# ALB MODULE (Production Traffic)
+# ========================================
+
+module "alb" {
+  source = "./modules/alb"
+
+  project_name       = local.project_name_lower
+  environment        = var.environment
+  vpc_id             = module.networking.vpc_id
+  public_subnet_ids  = module.networking.public_subnet_ids
+  private_subnet_ids = module.networking.private_subnet_ids
+  domain_name        = var.domain_name
+  certificate_arn    = module.dns.validated_certificate_arn
+  worker_node_port   = 30080 # Kong proxy NodePort
+
+  # Use ASG for dynamic target registration (recommended for auto-scaling)
+  worker_asg_name = module.kubernetes.asg_name
+
+  # Static IPs as fallback (only used if ASG name is empty)
+  worker_node_ips = var.worker_node_ips
+
+  health_check_path     = "/health"
+  enable_waf            = var.enable_waf
+  waf_rate_limit        = var.waf_rate_limit
+  alb_security_group_id = module.security.alb_sg_id
+}
+
+# ========================================
+# ROUTE 53 A RECORD (Points domain to ALB)
+# ========================================
+
+resource "aws_route53_record" "app" {
+  zone_id = module.dns.hosted_zone_id
+  name    = var.domain_name
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "www" {
+  zone_id = module.dns.hosted_zone_id
+  name    = "www.${var.domain_name}"
+  type    = "CNAME"
+  ttl     = 300
+  records = [var.domain_name]
+}
+

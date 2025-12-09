@@ -32,6 +32,29 @@
 			"Resource": "*"
 		},
 		{
+			"Sid": "Route53AndACMReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"route53:List*",
+				"route53:Get*",
+				"route53:Describe*",
+				"acm:List*",
+				"acm:Get*",
+				"acm:Describe*"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "WAFv2ReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"wafv2:List*",
+				"wafv2:Get*",
+				"wafv2:Describe*"
+			],
+			"Resource": "*"
+		},
+		{
 			"Sid": "IAMReadOnly",
 			"Effect": "Allow",
 			"Action": [

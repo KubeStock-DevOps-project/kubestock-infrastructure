@@ -171,6 +171,40 @@ resource "aws_security_group" "nlb_api" {
     security_groups = [aws_security_group.dev_server.id]
   }
 
+  # Staging Kong HTTP (port 81)
+  ingress {
+    description     = "Staging Kong HTTP from bastion"
+    from_port       = 81
+    to_port         = 81
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "Staging Kong HTTP from dev server"
+    from_port       = 81
+    to_port         = 81
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
+  # Staging Kong HTTPS (port 444)
+  ingress {
+    description     = "Staging Kong HTTPS from bastion"
+    from_port       = 444
+    to_port         = 444
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "Staging Kong HTTPS from dev server"
+    from_port       = 444
+    to_port         = 444
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
   egress {
     description = "Allow all outbound"
     from_port   = 0
@@ -273,6 +307,16 @@ resource "aws_security_group" "workers" {
     security_groups = [aws_security_group.nlb_api.id]
   }
 
+  # Zero-trust: Only allow Kong proxy port (30080) from ALB
+  # This is the only service that should be exposed to production traffic
+  ingress {
+    description     = "Kong proxy from ALB (production traffic - port 30080 only)"
+    from_port       = 30080
+    to_port         = 30080
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
   egress {
     description = "Allow all outbound"
     from_port   = 0
@@ -321,10 +365,10 @@ resource "aws_security_group" "rds" {
   }
 
   ingress {
-    description = "PostgreSQL from bastion (for debugging)"
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
+    description     = "PostgreSQL from bastion (for debugging)"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
     security_groups = [aws_security_group.bastion.id]
   }
 
@@ -338,5 +382,46 @@ resource "aws_security_group" "rds" {
 
   tags = {
     Name = "${var.project_name}-sg-rds"
+  }
+}
+
+# ========================================
+# ALB SECURITY GROUP (Production Traffic)
+# ========================================
+# Allows HTTPS traffic from internet to ALB
+
+resource "aws_security_group" "alb" {
+  name        = "${var.project_name}-sg-alb"
+  description = "Security group for Application Load Balancer - Production traffic"
+  vpc_id      = var.vpc_id
+
+  # HTTP (redirects to HTTPS)
+  ingress {
+    description = "HTTP from internet (redirect to HTTPS)"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # HTTPS
+  ingress {
+    description = "HTTPS from internet"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.project_name}-sg-alb"
   }
 }

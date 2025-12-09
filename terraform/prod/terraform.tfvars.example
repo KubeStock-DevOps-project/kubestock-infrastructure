@@ -61,3 +61,30 @@ db_password = "CHANGE_ME_TO_A_STRONG_PASSWORD_16_CHARS_MIN"
 
 # control_plane_private_ip = "10.0.10.21"
 # worker_private_ips       = ["10.0.11.30", "10.0.12.30"]
+
+# ========================================
+# DNS / SSL (Production HTTPS)
+# ========================================
+# Domain name for the production environment
+domain_name = "kubestock.dpiyumal.me"
+
+# Set to true to create a new Route 53 hosted zone
+# After creation, copy NS records to your domain registrar
+create_hosted_zone = true
+
+# If you already have a hosted zone, set create_hosted_zone = false
+# and provide the existing zone ID
+# hosted_zone_id = "Z1234567890ABC"
+
+# ========================================
+# ALB / WAF (Production Traffic)
+# ========================================
+# Worker node private IPs for ALB target group
+# These IPs should match the worker nodes in the cluster
+worker_node_ips = ["10.0.11.68", "10.0.12.167"]
+
+# Enable WAF for DDoS protection and rate limiting
+enable_waf = true
+
+# WAF rate limit (requests per 5 minutes from single IP)
+waf_rate_limit = 2000
