@@ -240,14 +240,14 @@ module "dns" {
 module "alb" {
   source = "./modules/alb"
 
-  project_name          = local.project_name_lower
-  environment           = var.environment
-  vpc_id                = module.networking.vpc_id
-  public_subnet_ids     = module.networking.public_subnet_ids
-  private_subnet_ids    = module.networking.private_subnet_ids
-  domain_name           = var.domain_name
-  certificate_arn       = module.dns.validated_certificate_arn
-  worker_node_port      = 30080 # Kong proxy NodePort
+  project_name       = local.project_name_lower
+  environment        = var.environment
+  vpc_id             = module.networking.vpc_id
+  public_subnet_ids  = module.networking.public_subnet_ids
+  private_subnet_ids = module.networking.private_subnet_ids
+  domain_name        = var.domain_name
+  certificate_arn    = module.dns.validated_certificate_arn
+  worker_node_port   = 30080 # Kong proxy NodePort
 
   # Use ASG for dynamic target registration (recommended for auto-scaling)
   worker_asg_name = module.kubernetes.asg_name

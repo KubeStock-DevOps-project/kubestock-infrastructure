@@ -79,6 +79,15 @@
             "Resource": "*"
         },
         {
+            "Sid": "Route53AndACMFullAccess",
+            "Effect": "Allow",
+            "Action": [
+                "route53:*",
+                "acm:*"
+            ],
+            "Resource": "*"
+        },
+        {
             "Sid": "IAMRoleManagement",
             "Effect": "Allow",
             "Action": [

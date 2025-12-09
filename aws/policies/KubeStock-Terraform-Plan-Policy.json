@@ -32,6 +32,19 @@
 			"Resource": "*"
 		},
 		{
+			"Sid": "Route53AndACMReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"route53:List*",
+				"route53:Get*",
+				"route53:Describe*",
+				"acm:List*",
+				"acm:Get*",
+				"acm:Describe*"
+			],
+			"Resource": "*"
+		},
+		{
 			"Sid": "IAMReadOnly",
 			"Effect": "Allow",
 			"Action": [
