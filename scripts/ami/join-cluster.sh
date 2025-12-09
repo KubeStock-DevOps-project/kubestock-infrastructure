@@ -104,7 +104,31 @@ kubeadm join 127.0.0.1:6443 \
 
 log "Successfully joined the cluster!"
 
-# Step 5: Verify node is ready (optional)
+# Step 5: Add topology labels (for EBS CSI and other topology-aware schedulers)
+log "Adding topology labels..."
+
+# Get metadata for labels
+IMDSv2_TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+AVAILABILITY_ZONE=$(curl -s -H "X-aws-ec2-metadata-token: $IMDSv2_TOKEN" http://169.254.169.254/latest/meta-data/placement/availability-zone)
+INSTANCE_TYPE=$(curl -s -H "X-aws-ec2-metadata-token: $IMDSv2_TOKEN" http://169.254.169.254/latest/meta-data/instance-type)
+REGION=$(curl -s -H "X-aws-ec2-metadata-token: $IMDSv2_TOKEN" http://169.254.169.254/latest/meta-data/placement/region)
+INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $IMDSv2_TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+HOSTNAME="worker-${INSTANCE_ID}"
+
+log "Adding labels: zone=$AVAILABILITY_ZONE, region=$REGION, instance-type=$INSTANCE_TYPE"
+
+# Wait a bit for the node to be registered
+sleep 15
+
+# Try to add labels (may fail if we don't have permissions, but try anyway)
+# The cloud controller manager should also add these, but this ensures they're present
+kubectl label node "$HOSTNAME" \
+    topology.kubernetes.io/zone="$AVAILABILITY_ZONE" \
+    topology.kubernetes.io/region="$REGION" \
+    node.kubernetes.io/instance-type="$INSTANCE_TYPE" \
+    --overwrite 2>/dev/null || log "Note: Could not add labels via kubectl (expected if running without kubeconfig)"
+
+# Step 6: Verify node is ready (optional)
 log "Verifying node status..."
 sleep 10
 if systemctl is-active --quiet kubelet; then

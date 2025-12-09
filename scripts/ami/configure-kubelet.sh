@@ -1,6 +1,6 @@
 #!/bin/bash
 # configure-kubelet.sh
-# Configures kubelet with instance-specific IP and hostname from EC2 metadata
+# Configures kubelet with instance-specific IP, hostname, and provider ID from EC2 metadata
 # This script should be run before kubeadm join
 
 set -e
@@ -11,11 +11,18 @@ TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-m
 # Get instance metadata
 INSTANCE_IP=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4)
 INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+AVAILABILITY_ZONE=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/availability-zone)
 HOSTNAME="worker-${INSTANCE_ID}"
 
-echo "Configuring kubelet with IP: ${INSTANCE_IP}, Hostname: ${HOSTNAME}"
+# Construct AWS provider ID (format: aws:///ZONE/INSTANCE_ID)
+PROVIDER_ID="aws:///${AVAILABILITY_ZONE}/${INSTANCE_ID}"
 
-# Update only the node-ip and hostname in kubelet.env, preserving other settings
+echo "Configuring kubelet with:"
+echo "  IP: ${INSTANCE_IP}"
+echo "  Hostname: ${HOSTNAME}"
+echo "  Provider ID: ${PROVIDER_ID}"
+
+# Update only the node-ip, hostname, and provider-id in kubelet.env, preserving other settings
 KUBELET_ENV="/etc/kubernetes/kubelet.env"
 KUBELET_CONFIG="/etc/kubernetes/kubelet-config.yaml"
 
@@ -23,19 +30,26 @@ if [ -f "$KUBELET_ENV" ]; then
     # Update existing values using sed
     sed -i "s|^KUBELET_ADDRESS=.*|KUBELET_ADDRESS=\"--node-ip=${INSTANCE_IP}\"|" "$KUBELET_ENV"
     sed -i "s|^KUBELET_HOSTNAME=.*|KUBELET_HOSTNAME=\"--hostname-override=${HOSTNAME}\"|" "$KUBELET_ENV"
+    
+    # Add or update KUBELET_CLOUDPROVIDER with provider-id
+    if grep -q "^KUBELET_CLOUDPROVIDER=" "$KUBELET_ENV"; then
+        sed -i "s|^KUBELET_CLOUDPROVIDER=.*|KUBELET_CLOUDPROVIDER=\"--cloud-provider=external --provider-id=${PROVIDER_ID}\"|" "$KUBELET_ENV"
+    else
+        echo "KUBELET_CLOUDPROVIDER=\"--cloud-provider=external --provider-id=${PROVIDER_ID}\"" >> "$KUBELET_ENV"
+    fi
 else
     # Create minimal kubelet.env if it doesn't exist
     cat > "$KUBELET_ENV" << EOF
 KUBE_LOG_LEVEL="--v=2"
 KUBELET_ADDRESS="--node-ip=${INSTANCE_IP}"
 KUBELET_HOSTNAME="--hostname-override=${HOSTNAME}"
+KUBELET_CLOUDPROVIDER="--cloud-provider=external --provider-id=${PROVIDER_ID}"
 
 KUBELET_ARGS="--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf \
 --config=/etc/kubernetes/kubelet-config.yaml \
 --kubeconfig=/etc/kubernetes/kubelet.conf \
 --runtime-cgroups=/system.slice/containerd.service \
  "
-KUBELET_CLOUDPROVIDER=""
 
 PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 EOF
