@@ -45,6 +45,16 @@
 			"Resource": "*"
 		},
 		{
+			"Sid": "WAFv2ReadOnly",
+			"Effect": "Allow",
+			"Action": [
+				"wafv2:List*",
+				"wafv2:Get*",
+				"wafv2:Describe*"
+			],
+			"Resource": "*"
+		},
+		{
 			"Sid": "IAMReadOnly",
 			"Effect": "Allow",
 			"Action": [

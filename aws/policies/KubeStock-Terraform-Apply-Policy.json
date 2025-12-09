@@ -88,6 +88,12 @@
             "Resource": "*"
         },
         {
+            "Sid": "WAFv2FullAccess",
+            "Effect": "Allow",
+            "Action": "wafv2:*",
+            "Resource": "*"
+        },
+        {
             "Sid": "IAMRoleManagement",
             "Effect": "Allow",
             "Action": [
