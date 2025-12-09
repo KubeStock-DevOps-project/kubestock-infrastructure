@@ -61,7 +61,7 @@ variable "worker_node_ips" {
 variable "health_check_path" {
   description = "Health check path for ALB target group"
   type        = string
-  default     = "/health"
+  default     = "/api/gateway/health"  # Kong health check endpoint
 }
 
 variable "enable_waf" {
