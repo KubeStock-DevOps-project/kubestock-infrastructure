@@ -171,6 +171,40 @@ resource "aws_security_group" "nlb_api" {
     security_groups = [aws_security_group.dev_server.id]
   }
 
+  # Staging Kong HTTP (port 81)
+  ingress {
+    description     = "Staging Kong HTTP from bastion"
+    from_port       = 81
+    to_port         = 81
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "Staging Kong HTTP from dev server"
+    from_port       = 81
+    to_port         = 81
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
+  # Staging Kong HTTPS (port 444)
+  ingress {
+    description     = "Staging Kong HTTPS from bastion"
+    from_port       = 444
+    to_port         = 444
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "Staging Kong HTTPS from dev server"
+    from_port       = 444
+    to_port         = 444
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
   egress {
     description = "Allow all outbound"
     from_port   = 0
