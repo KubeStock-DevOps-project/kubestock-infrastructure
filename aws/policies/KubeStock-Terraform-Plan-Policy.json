@@ -87,5 +87,22 @@
 				"arn:aws:s3:::kubestock-terraform-state/*"
 			]
 		}
+	   ,
+	   {
+		   "Sid": "ObservabilityS3ReadOnly",
+		   "Effect": "Allow",
+		   "Action": [
+			   "s3:GetObject",
+			   "s3:ListBucket"
+		   ],
+		   "Resource": [
+			   "arn:aws:s3:::kubestock-prometheus-metrics-*",
+			   "arn:aws:s3:::kubestock-prometheus-metrics-*/*",
+			   "arn:aws:s3:::kubestock-loki-logs-*",
+			   "arn:aws:s3:::kubestock-loki-logs-*/*",
+			   "arn:aws:s3:::kubestock-grafana-backups-*",
+			   "arn:aws:s3:::kubestock-grafana-backups-*/*"
+		   ]
+	   }
 	]
 }
