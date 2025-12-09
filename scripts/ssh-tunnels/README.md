@@ -29,6 +29,11 @@ localhost:8443  →  SSH Tunnel  →  nlb:443   →  NodePort 30444 (Kong Produc
 ArgoCD & Kubernetes API:
 localhost:9443  →  SSH Tunnel  →  nlb:8443  →  NodePort 30443 (ArgoCD)
 localhost:6443  →  SSH Tunnel  →  nlb:6443  →  Control Plane 6443
+
+Observability Stack (shared by staging & production):
+localhost:3000  →  SSH Tunnel  →  nlb:3000  →  NodePort 30300 (Grafana)
+localhost:9090  →  SSH Tunnel  →  nlb:9090  →  NodePort 30090 (Prometheus)
+localhost:9093  →  SSH Tunnel  →  nlb:9093  →  NodePort 30093 (Alertmanager - prod only)
 ```
 
 **Production is also accessible via ALB at: https://kubestock.dpiyumal.me**
@@ -63,6 +68,23 @@ localhost:6443  →  SSH Tunnel  →  nlb:6443  →  Control Plane 6443
 - `tunnel-production-https.bat` / `tunnel-production-https.sh`
   - HTTPS access to production (via bastion, for testing)
   - Local: `https://localhost:8443` → NLB `:443` → Kong Production NodePort `:30444`
+
+### Observability Stack Access
+- `tunnel-grafana.bat` / `tunnel-grafana.sh`
+  - Access Grafana dashboards (metrics + logs UI)
+  - Local: `http://localhost:3000` → NLB `:3000` → Worker NodePort `:30300`
+  - Default credentials: `admin` / `admin` (change on first login)
+  - Datasources: Prometheus (metrics), Loki (logs)
+
+- `tunnel-prometheus.bat` / `tunnel-prometheus.sh`
+  - Access Prometheus web UI for direct PromQL queries
+  - Local: `http://localhost:9090` → NLB `:9090` → Worker NodePort `:30090`
+  - Useful for exploring metrics and debugging scrape targets
+
+- `tunnel-alertmanager.bat` / `tunnel-alertmanager.sh`
+  - Access Alertmanager UI for viewing/silencing alerts
+  - Local: `http://localhost:9093` → NLB `:9093` → Worker NodePort `:30093`
+  - **Note: Only available in PRODUCTION environment**
 
 ## Setup Instructions
 
@@ -194,6 +216,9 @@ All services use a single internal NLB with multiple listeners:
 | 5173 | 443 | 30444 | Kong Gateway (HTTPS) |
 | 8443 | 8443 | 30443 | ArgoCD UI |
 | 6443 | 6443 | 6443 | Kubernetes API Server |
+| 3000 | 3000 | 30300 | Grafana (Dashboards & Logs) |
+| 9090 | 9090 | 30090 | Prometheus (Metrics) |
+| 9093 | 9093 | 30093 | Alertmanager (Alerts - prod only) |
 
 ## Troubleshooting
 

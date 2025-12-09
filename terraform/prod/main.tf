@@ -285,3 +285,21 @@ resource "aws_route53_record" "www" {
   records = [var.domain_name]
 }
 
+# ========================================
+# OBSERVABILITY MODULE (Prometheus, Loki, Grafana Storage)
+# ========================================
+
+module "observability" {
+  source = "./modules/observability"
+
+  project_name           = local.project_name_lower
+  environment            = var.environment
+  aws_region             = data.aws_region.current.name
+  log_retention_days     = var.observability_log_retention_days
+  metrics_retention_days = var.observability_metrics_retention_days
+  enable_grafana_backups = true
+
+  # Attach S3 policy to worker nodes
+  worker_iam_role_name = module.kubernetes.k8s_node_role_name
+}
+

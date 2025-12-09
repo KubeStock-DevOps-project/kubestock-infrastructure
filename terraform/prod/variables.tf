@@ -243,3 +243,18 @@ variable "hosted_zone_id" {
   type        = string
   default     = ""
 }
+# ========================================
+# OBSERVABILITY
+# ========================================
+
+variable "observability_log_retention_days" {
+  description = "Number of days to retain logs in S3 (Loki)"
+  type        = number
+  default     = 90
+}
+
+variable "observability_metrics_retention_days" {
+  description = "Number of days to retain metrics in S3 (Prometheus/Thanos)"
+  type        = number
+  default     = 365
+}

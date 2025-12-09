@@ -91,3 +91,22 @@ output "argocd_ui_endpoint" {
   description = "ArgoCD UI endpoint (NLB DNS:8443)"
   value       = "https://${aws_lb.k8s_api.dns_name}:8443"
 }
+
+# ========================================
+# OBSERVABILITY ENDPOINTS
+# ========================================
+
+output "grafana_endpoint" {
+  description = "Grafana dashboard endpoint (NLB DNS:3000)"
+  value       = "http://${aws_lb.k8s_api.dns_name}:3000"
+}
+
+output "prometheus_endpoint" {
+  description = "Prometheus dashboard endpoint (NLB DNS:9090)"
+  value       = "http://${aws_lb.k8s_api.dns_name}:9090"
+}
+
+output "alertmanager_endpoint" {
+  description = "Alertmanager dashboard endpoint (NLB DNS:9093)"
+  value       = "http://${aws_lb.k8s_api.dns_name}:9093"
+}

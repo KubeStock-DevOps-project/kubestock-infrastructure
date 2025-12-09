@@ -770,6 +770,143 @@ resource "aws_autoscaling_attachment" "argocd_ui" {
   lb_target_group_arn    = aws_lb_target_group.argocd_ui.arn
 }
 
+# ========================================
+# TARGET GROUP - GRAFANA (Observability Dashboard)
+# ========================================
+# Port 30300 -> Grafana NodePort (3000)
+
+resource "aws_lb_target_group" "grafana" {
+  name        = "${var.project_name}-grafana"
+  port        = 30300
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "instance"
+
+  health_check {
+    enabled             = true
+    protocol            = "TCP"
+    port                = "30300"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    interval            = 30
+  }
+
+  deregistration_delay = 30
+
+  tags = {
+    Name      = "${var.project_name}-grafana-tg"
+    Component = "observability"
+  }
+}
+
+resource "aws_lb_listener" "grafana" {
+  load_balancer_arn = aws_lb.k8s_api.arn
+  port              = 3000
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.grafana.arn
+  }
+}
+
+resource "aws_autoscaling_attachment" "grafana" {
+  autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
+  lb_target_group_arn    = aws_lb_target_group.grafana.arn
+}
+
+# ========================================
+# TARGET GROUP - PROMETHEUS (Metrics Dashboard)
+# ========================================
+# Port 30090 -> Prometheus NodePort (9090)
+
+resource "aws_lb_target_group" "prometheus" {
+  name        = "${var.project_name}-prometheus"
+  port        = 30090
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "instance"
+
+  health_check {
+    enabled             = true
+    protocol            = "HTTP"
+    port                = "30090"
+    path                = "/-/healthy"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    interval            = 30
+  }
+
+  deregistration_delay = 30
+
+  tags = {
+    Name      = "${var.project_name}-prometheus-tg"
+    Component = "observability"
+  }
+}
+
+resource "aws_lb_listener" "prometheus" {
+  load_balancer_arn = aws_lb.k8s_api.arn
+  port              = 9090
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.prometheus.arn
+  }
+}
+
+resource "aws_autoscaling_attachment" "prometheus" {
+  autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
+  lb_target_group_arn    = aws_lb_target_group.prometheus.arn
+}
+
+# ========================================
+# TARGET GROUP - ALERTMANAGER (Production Alerts)
+# ========================================
+# Port 30093 -> Alertmanager NodePort (9093)
+
+resource "aws_lb_target_group" "alertmanager" {
+  name        = "${var.project_name}-alertmanager"
+  port        = 30093
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "instance"
+
+  health_check {
+    enabled             = true
+    protocol            = "HTTP"
+    port                = "30093"
+    path                = "/-/healthy"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    interval            = 30
+  }
+
+  deregistration_delay = 30
+
+  tags = {
+    Name      = "${var.project_name}-alertmanager-tg"
+    Component = "observability"
+  }
+}
+
+resource "aws_lb_listener" "alertmanager" {
+  load_balancer_arn = aws_lb.k8s_api.arn
+  port              = 9093
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.alertmanager.arn
+  }
+}
+
+resource "aws_autoscaling_attachment" "alertmanager" {
+  autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
+  lb_target_group_arn    = aws_lb_target_group.alertmanager.arn
+}
+
 resource "aws_lb_target_group_attachment" "k8s_api" {
   target_group_arn = aws_lb_target_group.k8s_api.arn
   target_id        = aws_instance.control_plane.id
