@@ -36,3 +36,8 @@ output "rds_sg_id" {
   description = "Security group ID for RDS instances"
   value       = aws_security_group.rds.id
 }
+
+output "alb_sg_id" {
+  description = "Security group ID for Application Load Balancer"
+  value       = aws_security_group.alb.id
+}

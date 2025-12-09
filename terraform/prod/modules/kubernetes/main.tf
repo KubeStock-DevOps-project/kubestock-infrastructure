@@ -158,8 +158,8 @@ resource "aws_iam_policy" "k8s_ecr_pull" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "ecr:GetAuthorizationToken",
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
@@ -545,11 +545,12 @@ resource "aws_lb_listener" "k8s_api" {
 }
 
 # ========================================
-# TARGET GROUP - STAGING FRONTEND (HTTP)
+# TARGET GROUP - PRODUCTION KONG (HTTP)
+# NLB Port 80 → Kong Production NodePort 30080
 # ========================================
 
-resource "aws_lb_target_group" "staging_frontend_http" {
-  name        = "${var.project_name}-staging-fe-http"
+resource "aws_lb_target_group" "kong_production_http" {
+  name        = "${var.project_name}-kong-prod-http"
   port        = 30080
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -567,27 +568,28 @@ resource "aws_lb_target_group" "staging_frontend_http" {
   deregistration_delay = 30
 
   tags = {
-    Name = "${var.project_name}-staging-fe-http-tg"
+    Name = "${var.project_name}-kong-prod-http-tg"
   }
 }
 
-resource "aws_lb_listener" "staging_frontend_http" {
+resource "aws_lb_listener" "kong_production_http" {
   load_balancer_arn = aws_lb.k8s_api.arn
   port              = 80
   protocol          = "TCP"
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.staging_frontend_http.arn
+    target_group_arn = aws_lb_target_group.kong_production_http.arn
   }
 }
 
 # ========================================
-# TARGET GROUP - STAGING FRONTEND (HTTPS)
+# TARGET GROUP - PRODUCTION KONG (HTTPS)
+# NLB Port 443 → Kong Production NodePort 30444
 # ========================================
 
-resource "aws_lb_target_group" "staging_frontend_https" {
-  name        = "${var.project_name}-staging-fe-https"
+resource "aws_lb_target_group" "kong_production_https" {
+  name        = "${var.project_name}-kong-prod-https"
   port        = 30444
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -605,18 +607,98 @@ resource "aws_lb_target_group" "staging_frontend_https" {
   deregistration_delay = 30
 
   tags = {
-    Name = "${var.project_name}-staging-fe-https-tg"
+    Name = "${var.project_name}-kong-prod-https-tg"
   }
 }
 
-resource "aws_lb_listener" "staging_frontend_https" {
+resource "aws_lb_listener" "kong_production_https" {
   load_balancer_arn = aws_lb.k8s_api.arn
   port              = 443
   protocol          = "TCP"
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.staging_frontend_https.arn
+    target_group_arn = aws_lb_target_group.kong_production_https.arn
+  }
+}
+
+# ========================================
+# TARGET GROUP - STAGING KONG (HTTP)
+# NLB Port 81 → Kong Staging NodePort 30081
+# Access via SSH tunnel through bastion
+# ========================================
+
+resource "aws_lb_target_group" "kong_staging_http" {
+  name        = "${var.project_name}-kong-stg-http"
+  port        = 30081
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "instance"
+
+  health_check {
+    enabled             = true
+    protocol            = "TCP"
+    port                = "30081"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    interval            = 30
+  }
+
+  deregistration_delay = 30
+
+  tags = {
+    Name = "${var.project_name}-kong-stg-http-tg"
+  }
+}
+
+resource "aws_lb_listener" "kong_staging_http" {
+  load_balancer_arn = aws_lb.k8s_api.arn
+  port              = 81
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.kong_staging_http.arn
+  }
+}
+
+# ========================================
+# TARGET GROUP - STAGING KONG (HTTPS)
+# NLB Port 444 → Kong Staging NodePort 30445
+# Access via SSH tunnel through bastion
+# ========================================
+
+resource "aws_lb_target_group" "kong_staging_https" {
+  name        = "${var.project_name}-kong-stg-https"
+  port        = 30445
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "instance"
+
+  health_check {
+    enabled             = true
+    protocol            = "TCP"
+    port                = "30445"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    interval            = 30
+  }
+
+  deregistration_delay = 30
+
+  tags = {
+    Name = "${var.project_name}-kong-stg-https-tg"
+  }
+}
+
+resource "aws_lb_listener" "kong_staging_https" {
+  load_balancer_arn = aws_lb.k8s_api.arn
+  port              = 444
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.kong_staging_https.arn
   }
 }
 
@@ -660,16 +742,27 @@ resource "aws_lb_listener" "argocd_ui" {
 
 # ========================================
 # TARGET GROUP ATTACHMENTS - ASG WORKERS
+# Auto-registers workers for Kong and ArgoCD
 # ========================================
 
-resource "aws_autoscaling_attachment" "staging_frontend_http" {
+resource "aws_autoscaling_attachment" "kong_production_http" {
   autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
-  lb_target_group_arn    = aws_lb_target_group.staging_frontend_http.arn
+  lb_target_group_arn    = aws_lb_target_group.kong_production_http.arn
 }
 
-resource "aws_autoscaling_attachment" "staging_frontend_https" {
+resource "aws_autoscaling_attachment" "kong_production_https" {
   autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
-  lb_target_group_arn    = aws_lb_target_group.staging_frontend_https.arn
+  lb_target_group_arn    = aws_lb_target_group.kong_production_https.arn
+}
+
+resource "aws_autoscaling_attachment" "kong_staging_http" {
+  autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
+  lb_target_group_arn    = aws_lb_target_group.kong_staging_http.arn
+}
+
+resource "aws_autoscaling_attachment" "kong_staging_https" {
+  autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
+  lb_target_group_arn    = aws_lb_target_group.kong_staging_https.arn
 }
 
 resource "aws_autoscaling_attachment" "argocd_ui" {

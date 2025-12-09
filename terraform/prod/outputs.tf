@@ -362,3 +362,84 @@ output "external_secrets_secret_access_key" {
   value       = module.secrets.external_secrets_secret_access_key
   sensitive   = true
 }
+
+# ========================================
+# ALB + WAF (Production)
+# ========================================
+
+output "alb_dns_name" {
+  description = "DNS name of the Application Load Balancer"
+  value       = module.alb.alb_dns_name
+}
+
+output "alb_zone_id" {
+  description = "Zone ID of the ALB (for Route 53 alias records)"
+  value       = module.alb.alb_zone_id
+}
+
+output "alb_arn" {
+  description = "ARN of the Application Load Balancer"
+  value       = module.alb.alb_arn
+}
+
+output "waf_web_acl_arn" {
+  description = "ARN of the WAF Web ACL"
+  value       = module.alb.waf_web_acl_arn
+}
+
+output "production_url" {
+  description = "Production URL for the application"
+  value       = "https://${var.domain_name}"
+}
+
+output "route53_alias_record" {
+  description = "Instructions to create Route 53 alias record"
+  value = {
+    name                   = var.domain_name
+    type                   = "A"
+    alias_target           = module.alb.alb_dns_name
+    alias_hosted_zone_id   = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+# ========================================
+# DNS SETUP (for Namecheap/External Registrar)
+# ========================================
+
+output "hosted_zone_id" {
+  description = "Route 53 Hosted Zone ID"
+  value       = module.dns.hosted_zone_id
+}
+
+output "hosted_zone_nameservers" {
+  description = "NS records to configure at your domain registrar (Namecheap)"
+  value       = module.dns.hosted_zone_name_servers
+}
+
+output "dns_setup_instructions" {
+  description = "Instructions for configuring DNS at external registrar"
+  value       = <<-EOT
+    =====================================================
+    DNS CONFIGURATION FOR NAMECHEAP (or other registrar)
+    =====================================================
+    
+    1. Log into your Namecheap account
+    2. Go to Domain List → Manage → Domain
+    3. Under "Nameservers", select "Custom DNS"
+    4. Enter these nameservers (copy exactly):
+       ${join("\n       ", module.dns.hosted_zone_name_servers)}
+    
+    5. Wait for propagation (usually 30 mins, can take up to 48 hours)
+    6. Verify with: dig +short NS ${var.domain_name}
+    
+    After DNS propagates, your app will be accessible at:
+    https://${var.domain_name}
+    =====================================================
+  EOT
+}
+
+output "certificate_status" {
+  description = "Status of the ACM certificate (should be ISSUED)"
+  value       = module.dns.certificate_status
+}

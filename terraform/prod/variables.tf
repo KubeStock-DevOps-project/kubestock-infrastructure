@@ -200,3 +200,46 @@ variable "staging_db_instance_class" {
   type        = string
   default     = "db.t4g.small"
 }
+
+# ========================================
+# ALB + WAF (Production)
+# ========================================
+
+variable "domain_name" {
+  description = "Domain name for production (e.g., kubestock.dpiyumal.me)"
+  type        = string
+  default     = "kubestock.dpiyumal.me"
+}
+
+# Note: ACM certificate is now created by the dns module
+# No need for acm_certificate_arn variable
+
+variable "enable_waf" {
+  description = "Enable WAF protection for production"
+  type        = bool
+  default     = true
+}
+
+variable "waf_rate_limit" {
+  description = "WAF rate limit (requests per 5 minutes per IP)"
+  type        = number
+  default     = 2000
+}
+
+variable "worker_node_ips" {
+  description = "List of worker node private IPs for ALB target group"
+  type        = list(string)
+  default     = []
+}
+
+variable "create_hosted_zone" {
+  description = "Whether to create a new Route 53 hosted zone"
+  type        = bool
+  default     = true
+}
+
+variable "hosted_zone_id" {
+  description = "Existing Route 53 hosted zone ID (if not creating new)"
+  type        = string
+  default     = ""
+}

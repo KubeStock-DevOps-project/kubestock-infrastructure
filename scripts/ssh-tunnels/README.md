@@ -12,17 +12,26 @@ The NLB provides:
 
 ## Architecture
 
-All services are accessed through a single internal NLB:
+Services are accessed through the internal NLB:
 
 ```
 Your Machine          Bastion Host              NLB                Worker Nodes
 ============          ============              ===                ============
 
-localhost:5173  →  SSH Tunnel  →  nlb:80    →  NodePort 30080 (Kong HTTP)
-localhost:5173  →  SSH Tunnel  →  nlb:443   →  NodePort 30444 (Kong HTTPS)
-localhost:8443  →  SSH Tunnel  →  nlb:8443  →  NodePort 30443 (ArgoCD)
+Staging (via kong-staging namespace):
+localhost:5173  →  SSH Tunnel  →  nlb:81    →  NodePort 30081 (Kong Staging HTTP)
+localhost:5174  →  SSH Tunnel  →  nlb:444   →  NodePort 30445 (Kong Staging HTTPS)
+
+Production (via kong namespace - also accessible via ALB):
+localhost:8080  →  SSH Tunnel  →  nlb:80    →  NodePort 30080 (Kong Production HTTP)
+localhost:8443  →  SSH Tunnel  →  nlb:443   →  NodePort 30444 (Kong Production HTTPS)
+
+ArgoCD & Kubernetes API:
+localhost:9443  →  SSH Tunnel  →  nlb:8443  →  NodePort 30443 (ArgoCD)
 localhost:6443  →  SSH Tunnel  →  nlb:6443  →  Control Plane 6443
 ```
+
+**Production is also accessible via ALB at: https://kubestock.dpiyumal.me**
 
 ## Available Scripts
 
@@ -34,17 +43,26 @@ localhost:6443  →  SSH Tunnel  →  nlb:6443  →  Control Plane 6443
 ### ArgoCD UI Access
 - `tunnel-argocd.bat` / `tunnel-argocd.sh`
   - Tunnels web browser to ArgoCD UI
-  - Local: `https://localhost:8443` → NLB `:8443` → Worker NodePort `:30443`
+  - Local: `https://localhost:9443` → NLB `:8443` → Worker NodePort `:30443`
   - Default credentials: `admin` / (get from secret)
 
-### Staging Frontend Access
-- `tunnel-staging-frontend.bat` / `tunnel-staging-frontend.sh`
-  - HTTP access to staging frontend
-  - Local: `http://localhost:5173` → NLB `:80` → Kong Gateway NodePort `:30080`
+### Staging Access (via kong-staging)
+- `tunnel-staging.bat` / `tunnel-staging.sh`
+  - HTTP access to staging environment
+  - Local: `http://localhost:5173` → NLB `:81` → Kong Staging NodePort `:30081`
 
-- `tunnel-staging-frontend-https.bat` / `tunnel-staging-frontend-https.sh`
-  - HTTPS access to staging frontend
-  - Local: `https://localhost:5173` → NLB `:443` → Kong Gateway NodePort `:30444`
+- `tunnel-staging-https.bat` / `tunnel-staging-https.sh`
+  - HTTPS access to staging environment
+  - Local: `https://localhost:5174` → NLB `:444` → Kong Staging NodePort `:30445`
+
+### Production Access (via kong - also available at https://kubestock.dpiyumal.me)
+- `tunnel-production.bat` / `tunnel-production.sh`
+  - HTTP access to production (via bastion, for testing)
+  - Local: `http://localhost:8080` → NLB `:80` → Kong Production NodePort `:30080`
+
+- `tunnel-production-https.bat` / `tunnel-production-https.sh`
+  - HTTPS access to production (via bastion, for testing)
+  - Local: `https://localhost:8443` → NLB `:443` → Kong Production NodePort `:30444`
 
 ## Setup Instructions
 
