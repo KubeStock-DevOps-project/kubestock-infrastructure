@@ -45,7 +45,7 @@ This guide explains how to set up an Auto Scaling Group (ASG) for Kubernetes wor
 
 ## Current Configuration
 
-- **AMI**: \`ami-03507841d11a30bc0\` (kubestock-worker-golden-ami-v4)
+- **AMI**: \`ami-03a1d146e75612e44\` (kubestock-worker-golden-ami-v5 - with provider ID and topology labels)
 - **ASG Capacity**: min=1, desired=2, max=5
 - **Token Refresh**: Every 12 hours via Lambda
 - **Scaling**: Manual or via Kubernetes Cluster Autoscaler (recommended)

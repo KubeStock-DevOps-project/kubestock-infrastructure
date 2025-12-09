@@ -136,7 +136,7 @@ variable "worker_private_ips" {
 variable "worker_ami_id" {
   description = "AMI ID for the Kubernetes worker nodes (Golden AMI)"
   type        = string
-  default     = "ami-03507841d11a30bc0" # kubestock-worker-golden-ami-v4 - with AWS CLI
+  default     = "ami-03a1d146e75612e44" # kubestock-worker-golden-ami-v5 - with provider ID and topology labels
 }
 
 variable "asg_desired_capacity" {
