@@ -139,11 +139,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "loki_logs" {
     }
 
     transition {
-      days          = 90
+      days          = 60
       storage_class = "GLACIER"
     }
 
-    # Keep logs for 90 days then delete (adjust based on compliance needs)
+    # Keep logs for configured retention period (must be > 60 days)
     expiration {
       days = var.log_retention_days
     }
