@@ -205,6 +205,57 @@ resource "aws_security_group" "nlb_api" {
     security_groups = [aws_security_group.dev_server.id]
   }
 
+  # Grafana (Observability Dashboard)
+  ingress {
+    description     = "Grafana from bastion"
+    from_port       = 3000
+    to_port         = 3000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "Grafana from dev server"
+    from_port       = 3000
+    to_port         = 3000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
+  # Prometheus (Metrics Dashboard)
+  ingress {
+    description     = "Prometheus from bastion"
+    from_port       = 9090
+    to_port         = 9090
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "Prometheus from dev server"
+    from_port       = 9090
+    to_port         = 9090
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
+  # Alertmanager (Alert Dashboard)
+  ingress {
+    description     = "Alertmanager from bastion"
+    from_port       = 9093
+    to_port         = 9093
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "Alertmanager from dev server"
+    from_port       = 9093
+    to_port         = 9093
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
   egress {
     description = "Allow all outbound"
     from_port   = 0

@@ -443,3 +443,70 @@ output "certificate_status" {
   description = "Status of the ACM certificate (should be ISSUED)"
   value       = module.dns.certificate_status
 }
+
+# ========================================
+# OBSERVABILITY
+# ========================================
+
+output "observability_prometheus_bucket" {
+  description = "S3 bucket for Prometheus long-term metrics storage"
+  value       = module.observability.prometheus_bucket_name
+}
+
+output "observability_loki_bucket" {
+  description = "S3 bucket for Loki log storage"
+  value       = module.observability.loki_bucket_name
+}
+
+output "observability_grafana_bucket" {
+  description = "S3 bucket for Grafana dashboard backups"
+  value       = module.observability.grafana_bucket_name
+}
+
+output "observability_s3_config" {
+  description = "S3 configuration for observability stack"
+  value       = module.observability.s3_config
+}
+
+output "observability_policy_arn" {
+  description = "IAM policy ARN for observability S3 access"
+  value       = module.observability.observability_policy_arn
+}
+
+output "observability_grafana_endpoint" {
+  description = "Grafana dashboard URL (via NLB)"
+  value       = module.kubernetes.grafana_endpoint
+}
+
+output "observability_prometheus_endpoint" {
+  description = "Prometheus dashboard URL (via NLB)"
+  value       = module.kubernetes.prometheus_endpoint
+}
+
+output "observability_alertmanager_endpoint" {
+  description = "Alertmanager dashboard URL (via NLB)"
+  value       = module.kubernetes.alertmanager_endpoint
+}
+
+output "observability_access_info" {
+  description = "How to access observability dashboards"
+  value       = <<-EOT
+    =====================================================
+    OBSERVABILITY DASHBOARD ACCESS
+    =====================================================
+    
+    Grafana (Visualization & Logs):
+      URL: ${module.kubernetes.grafana_endpoint}
+      Login: admin / kubestock@2025
+    
+    Prometheus (Metrics):
+      URL: ${module.kubernetes.prometheus_endpoint}
+    
+    Alertmanager (Alerts - Production only):
+      URL: ${module.kubernetes.alertmanager_endpoint}
+    
+    Note: These endpoints are accessible via the NLB.
+    For security, consider restricting access via security groups.
+    =====================================================
+  EOT
+}
