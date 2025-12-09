@@ -134,12 +134,12 @@ resource "aws_s3_bucket_lifecycle_configuration" "loki_logs" {
     }
 
     transition {
-      days          = 14
+      days          = 30
       storage_class = "STANDARD_IA"
     }
 
     transition {
-      days          = 60
+      days          = 90
       storage_class = "GLACIER"
     }
 
