@@ -907,6 +907,99 @@ resource "aws_autoscaling_attachment" "alertmanager" {
   lb_target_group_arn    = aws_lb_target_group.alertmanager.arn
 }
 
+# ========================================
+# TARGET GROUP - GRAFANA STAGING
+# ========================================
+# Port 31300 -> Grafana Staging NodePort (3000)
+
+resource "aws_lb_target_group" "grafana_staging" {
+  name        = "${var.project_name}-grafana-staging"
+  port        = 31300
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "instance"
+
+  health_check {
+    enabled             = true
+    protocol            = "TCP"
+    port                = "31300"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    interval            = 30
+  }
+
+  deregistration_delay = 30
+
+  tags = {
+    Name        = "${var.project_name}-grafana-staging-tg"
+    Component   = "observability"
+    Environment = "staging"
+  }
+}
+
+resource "aws_lb_listener" "grafana_staging" {
+  load_balancer_arn = aws_lb.k8s_api.arn
+  port              = 3001
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.grafana_staging.arn
+  }
+}
+
+resource "aws_autoscaling_attachment" "grafana_staging" {
+  autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
+  lb_target_group_arn    = aws_lb_target_group.grafana_staging.arn
+}
+
+# ========================================
+# TARGET GROUP - PROMETHEUS STAGING
+# ========================================
+# Port 31090 -> Prometheus Staging NodePort (9090)
+
+resource "aws_lb_target_group" "prometheus_staging" {
+  name        = "${var.project_name}-prometheus-stg"
+  port        = 31090
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "instance"
+
+  health_check {
+    enabled             = true
+    protocol            = "HTTP"
+    port                = "31090"
+    path                = "/-/healthy"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    interval            = 30
+  }
+
+  deregistration_delay = 30
+
+  tags = {
+    Name        = "${var.project_name}-prometheus-staging-tg"
+    Component   = "observability"
+    Environment = "staging"
+  }
+}
+
+resource "aws_lb_listener" "prometheus_staging" {
+  load_balancer_arn = aws_lb.k8s_api.arn
+  port              = 9091
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.prometheus_staging.arn
+  }
+}
+
+resource "aws_autoscaling_attachment" "prometheus_staging" {
+  autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
+  lb_target_group_arn    = aws_lb_target_group.prometheus_staging.arn
+}
+
 resource "aws_lb_target_group_attachment" "k8s_api" {
   target_group_arn = aws_lb_target_group.k8s_api.arn
   target_id        = aws_instance.control_plane.id

@@ -96,17 +96,29 @@ output "argocd_ui_endpoint" {
 # OBSERVABILITY ENDPOINTS
 # ========================================
 
+# Production Observability
 output "grafana_endpoint" {
-  description = "Grafana dashboard endpoint (NLB DNS:3000)"
+  description = "Grafana Production dashboard endpoint (NLB DNS:3000)"
   value       = "http://${aws_lb.k8s_api.dns_name}:3000"
 }
 
 output "prometheus_endpoint" {
-  description = "Prometheus dashboard endpoint (NLB DNS:9090)"
+  description = "Prometheus Production dashboard endpoint (NLB DNS:9090)"
   value       = "http://${aws_lb.k8s_api.dns_name}:9090"
 }
 
 output "alertmanager_endpoint" {
-  description = "Alertmanager dashboard endpoint (NLB DNS:9093)"
+  description = "Alertmanager Production dashboard endpoint (NLB DNS:9093)"
   value       = "http://${aws_lb.k8s_api.dns_name}:9093"
+}
+
+# Staging Observability
+output "grafana_staging_endpoint" {
+  description = "Grafana Staging dashboard endpoint (NLB DNS:3001)"
+  value       = "http://${aws_lb.k8s_api.dns_name}:3001"
+}
+
+output "prometheus_staging_endpoint" {
+  description = "Prometheus Staging dashboard endpoint (NLB DNS:9091)"
+  value       = "http://${aws_lb.k8s_api.dns_name}:9091"
 }
