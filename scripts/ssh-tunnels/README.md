@@ -40,51 +40,26 @@ localhost:9093  →  SSH Tunnel  →  nlb:9093  →  NodePort 30093 (Alertmanage
 
 ## Available Scripts
 
-### Kubernetes API Access
-- `tunnel-k8s-api.bat` / `tunnel-k8s-api.sh`
-  - Tunnels kubectl access to K8s API server
-  - Local: `localhost:6443` → NLB → Control Plane `:6443`
+### Unified "All Tunnels" Scripts (Recommended)
 
-### ArgoCD UI Access
-- `tunnel-argocd.bat` / `tunnel-argocd.sh`
-  - Tunnels web browser to ArgoCD UI
-  - Local: `https://localhost:9443` → NLB `:8443` → Worker NodePort `:30443`
-  - Default credentials: `admin` / (get from secret)
+- `tunnel-all.sh` (Linux/Mac)
+- `tunnel-all.bat` (Windows)
 
-### Staging Access (via kong-staging)
-- `tunnel-staging.bat` / `tunnel-staging.sh`
-  - HTTP access to staging environment
-  - Local: `http://localhost:5173` → NLB `:81` → Kong Staging NodePort `:30081`
+These scripts open **all common tunnels at once** in a single SSH session:
 
-- `tunnel-staging-https.bat` / `tunnel-staging-https.sh`
-  - HTTPS access to staging environment
-  - Local: `https://localhost:5174` → NLB `:444` → Kong Staging NodePort `:30445`
+| Purpose                  | Local Endpoint             | NLB Port |
+|--------------------------|---------------------------|----------|
+| Staging Frontend (HTTP)  | `http://localhost:5173`   | `80`     |
+| Staging Frontend (HTTPS) | `https://localhost:5174`  | `443`    |
+| Kubernetes API           | `https://localhost:6443`  | `6443`   |
+| ArgoCD UI                | `https://localhost:8443`  | `8443`   |
+| Grafana                  | `http://localhost:3000`   | `3000`   |
+| Prometheus               | `http://localhost:9090`   | `9090`   |
+| Alertmanager (prod only) | `http://localhost:9093`   | `9093`   |
 
-### Production Access (via kong - also available at https://kubestock.dpiyumal.me)
-- `tunnel-production.bat` / `tunnel-production.sh`
-  - HTTP access to production (via bastion, for testing)
-  - Local: `http://localhost:8080` → NLB `:80` → Kong Production NodePort `:30080`
-
-- `tunnel-production-https.bat` / `tunnel-production-https.sh`
-  - HTTPS access to production (via bastion, for testing)
-  - Local: `https://localhost:8443` → NLB `:443` → Kong Production NodePort `:30444`
-
-### Observability Stack Access
-- `tunnel-grafana.bat` / `tunnel-grafana.sh`
-  - Access Grafana dashboards (metrics + logs UI)
-  - Local: `http://localhost:3000` → NLB `:3000` → Worker NodePort `:30300`
-  - Default credentials: `admin` / `admin` (change on first login)
-  - Datasources: Prometheus (metrics), Loki (logs)
-
-- `tunnel-prometheus.bat` / `tunnel-prometheus.sh`
-  - Access Prometheus web UI for direct PromQL queries
-  - Local: `http://localhost:9090` → NLB `:9090` → Worker NodePort `:30090`
-  - Useful for exploring metrics and debugging scrape targets
-
-- `tunnel-alertmanager.bat` / `tunnel-alertmanager.sh`
-  - Access Alertmanager UI for viewing/silencing alerts
-  - Local: `http://localhost:9093` → NLB `:9093` → Worker NodePort `:30093`
-  - **Note: Only available in PRODUCTION environment**
+> The previous per-service scripts (e.g. `tunnel-grafana.sh`, `tunnel-prometheus.sh`,
+> `tunnel-k8s-api.sh`, etc.) have been consolidated into these two unified scripts
+> to keep usage simple and consistent.
 
 ## Setup Instructions
 
@@ -154,17 +129,8 @@ Once environment variables are set, simply run the scripts - no editing required
 ### Windows
 
 ```cmd
-REM Start ArgoCD tunnel
-tunnel-argocd.bat
-
-REM Start staging frontend tunnel (HTTP)
-tunnel-staging-frontend.bat
-
-REM Start staging frontend tunnel (HTTPS)
-tunnel-staging-frontend-https.bat
-
-REM Start K8s API tunnel
-tunnel-k8s-api.bat
+REM Start ALL tunnels (staging, API, ArgoCD, observability)
+tunnel-all.bat
 ```
 
 If environment variables are not set, scripts will show helpful error messages:
@@ -176,17 +142,8 @@ Please set it: set KUBESTOCK_BASTION_IP=13.202.52.3
 ### Linux/Mac
 
 ```bash
-# Start ArgoCD tunnel
-./tunnel-argocd.sh
-
-# Start staging frontend tunnel (HTTP)
-./tunnel-staging-frontend.sh
-
-# Start staging frontend tunnel (HTTPS)
-./tunnel-staging-frontend-https.sh
-
-# Start K8s API tunnel
-./tunnel-k8s-api.sh
+# Start ALL tunnels (staging, API, ArgoCD, observability)
+./tunnel-all.sh
 ```
 
 If environment variables are not set, scripts will show helpful error messages:
