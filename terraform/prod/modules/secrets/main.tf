@@ -38,6 +38,21 @@ resource "aws_secretsmanager_secret" "asgardeo" {
   })
 }
 
+resource "aws_secretsmanager_secret" "alertmanager_slack" {
+  for_each = local.environments
+
+  name                    = "${var.project_name}/${each.key}/alertmanager/slack"
+  description             = "Slack webhook URLs for Alertmanager in ${var.project_name} ${each.key}"
+  kms_key_id              = var.kms_key_id
+  recovery_window_in_days = var.recovery_window_in_days
+
+  tags = merge(var.tags, {
+    Project     = var.project_name
+    Environment = each.key
+    SecretType  = "alertmanager"
+  })
+}
+
 # ========================================
 # IAM USER FOR EXTERNAL SECRETS OPERATOR
 # ========================================
