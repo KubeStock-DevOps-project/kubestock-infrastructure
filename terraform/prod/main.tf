@@ -46,7 +46,8 @@ locals {
     "kubestock/ms-supplier",
     "kubestock/ms-order-management",
     "kubestock/ms-identity",
-    "kubestock/web"
+    "kubestock/web",
+    "kubestock/test-runner",
   ]
 }
 
