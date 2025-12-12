@@ -279,6 +279,10 @@ resource "aws_instance" "control_plane" {
     volume_type = "gp3"
   }
 
+  lifecycle {
+    ignore_changes = [ami]
+  }
+
   tags = {
     Name                                            = "${var.project_name}-control-plane"
     Role                                            = "control-plane"
@@ -312,6 +316,10 @@ resource "aws_instance" "worker" {
 
   user_data = filebase64("${path.root}/worker_user_data.sh")
 
+  lifecycle {
+    ignore_changes = [ami]
+  }
+
   tags = {
     Name                                        = "${var.project_name}-worker-${count.index + 1}"
     Role                                        = "worker"
@@ -342,6 +350,10 @@ resource "aws_instance" "worker_golden_ami_builder" {
   }
 
   user_data = filebase64("${path.root}/worker_user_data.sh")
+
+  lifecycle {
+    ignore_changes = [ami]
+  }
 
   tags = {
     Name                                        = "${var.project_name}-worker-golden-ami-builder"
@@ -423,7 +435,6 @@ resource "aws_launch_template" "k8s_worker" {
 
   lifecycle {
     create_before_destroy = true
-    ignore_changes        = [user_data]
   }
 
   tags = {

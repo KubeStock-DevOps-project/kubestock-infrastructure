@@ -53,7 +53,7 @@ resource "aws_instance" "bastion" {
   }
 
   lifecycle {
-    ignore_changes = [associate_public_ip_address]
+    ignore_changes = [ami, associate_public_ip_address]
   }
 
   tags = {
@@ -98,7 +98,7 @@ resource "aws_instance" "dev_server" {
   user_data = file("${path.module}/dev_server_user_data.sh")
 
   lifecycle {
-    ignore_changes = [user_data, associate_public_ip_address]
+    ignore_changes = [ami, user_data, associate_public_ip_address]
   }
 }
 
