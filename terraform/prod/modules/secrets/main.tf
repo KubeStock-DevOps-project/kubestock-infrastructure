@@ -54,20 +54,29 @@ resource "aws_secretsmanager_secret" "alertmanager_slack" {
 }
 
 # ========================================
-# TEST USER CREDENTIALS (SHARED ACROSS ENVIRONMENTS)
+# TEST RUNNER CREDENTIALS (SHARED ACROSS ENVIRONMENTS)
+# ========================================
+# Contains OAuth client credentials and test user account for test runner service
+# Expected JSON structure:
+# {
+#   "client_id": "XtRI7XG3trMvZvMOuqF6z02JfSIa",
+#   "client_secret": "mdhwraYRidwnvV4REn5kaY64ZnkZ8lGACpjfyHlVt6Qa",
+#   "username": "test_runner@yopmail.com",
+#   "password": "Test_runner123"
+# }
 # ========================================
 
-resource "aws_secretsmanager_secret" "test_user" {
-  name                    = "${var.project_name}/shared/test-user"
-  description             = "Test user credentials for automated testing (shared across all environments)"
+resource "aws_secretsmanager_secret" "test_runner" {
+  name                    = "${var.project_name}/shared/test-runner"
+  description             = "Test runner OAuth client and user credentials (shared across all environments)"
   kms_key_id              = var.kms_key_id
   recovery_window_in_days = var.recovery_window_in_days
 
   tags = merge(var.tags, {
     Project     = var.project_name
     Environment = "shared"
-    SecretType  = "test-user"
-    Purpose     = "Automated testing and CI/CD"
+    SecretType  = "test-runner"
+    Purpose     = "Test Runner service authentication"
   })
 }
 

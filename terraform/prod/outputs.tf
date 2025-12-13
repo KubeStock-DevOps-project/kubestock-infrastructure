@@ -363,14 +363,14 @@ output "external_secrets_secret_access_key" {
   sensitive   = true
 }
 
-output "test_user_secret_arn" {
-  description = "ARN of test user credentials secret"
-  value       = module.secrets.test_user_secret_arn
+output "test_runner_secret_arn" {
+  description = "ARN of test runner credentials secret"
+  value       = module.secrets.test_runner_secret_arn
 }
 
-output "test_user_secret_name" {
-  description = "Name of test user credentials secret"
-  value       = module.secrets.test_user_secret_name
+output "test_runner_secret_name" {
+  description = "Name of test runner credentials secret"
+  value       = module.secrets.test_runner_secret_name
 }
 
 # ========================================

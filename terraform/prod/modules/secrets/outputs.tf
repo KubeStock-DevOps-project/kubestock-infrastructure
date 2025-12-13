@@ -22,14 +22,14 @@ output "asgardeo_secret_names" {
   value       = { for env, secret in aws_secretsmanager_secret.asgardeo : env => secret.name }
 }
 
-output "test_user_secret_arn" {
-  description = "ARN of test user credentials secret (shared across environments)"
-  value       = aws_secretsmanager_secret.test_user.arn
+output "test_runner_secret_arn" {
+  description = "ARN of test runner credentials secret (shared across environments)"
+  value       = aws_secretsmanager_secret.test_runner.arn
 }
 
-output "test_user_secret_name" {
-  description = "Name of test user credentials secret (shared across environments)"
-  value       = aws_secretsmanager_secret.test_user.name
+output "test_runner_secret_name" {
+  description = "Name of test runner credentials secret (shared across environments)"
+  value       = aws_secretsmanager_secret.test_runner.name
 }
 
 output "external_secrets_user_name" {
