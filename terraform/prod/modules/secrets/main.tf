@@ -54,6 +54,24 @@ resource "aws_secretsmanager_secret" "alertmanager_slack" {
 }
 
 # ========================================
+# TEST USER CREDENTIALS (SHARED ACROSS ENVIRONMENTS)
+# ========================================
+
+resource "aws_secretsmanager_secret" "test_user" {
+  name                    = "${var.project_name}/shared/test-user"
+  description             = "Test user credentials for automated testing (shared across all environments)"
+  kms_key_id              = var.kms_key_id
+  recovery_window_in_days = var.recovery_window_in_days
+
+  tags = merge(var.tags, {
+    Project     = var.project_name
+    Environment = "shared"
+    SecretType  = "test-user"
+    Purpose     = "Automated testing and CI/CD"
+  })
+}
+
+# ========================================
 # IAM USER FOR EXTERNAL SECRETS OPERATOR
 # ========================================
 
