@@ -18,8 +18,8 @@ output "alb_zone_id" {
 }
 
 output "target_group_arn" {
-  description = "ARN of the Istio target group"
-  value       = aws_lb_target_group.istio.arn
+  description = "ARN of the Kong target group"
+  value       = aws_lb_target_group.kong.arn
 }
 
 output "https_listener_arn" {

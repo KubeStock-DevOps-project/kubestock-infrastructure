@@ -2,7 +2,7 @@
 # ALB + WAF MODULE
 # ========================================
 # Application Load Balancer with WAF protection
-# Data Flow: WAF -> ALB (HTTPS) -> Istio IngressGateway NodePort -> Pods
+# Data Flow: WAF -> ALB (HTTPS) -> Kong API Gateway NodePort -> Pods
 # ========================================
 
 # ========================================
@@ -33,7 +33,7 @@ resource "aws_lb" "main" {
 }
 
 # ========================================
-# TARGET GROUP (Points to Istio IngressGateway NodePort)
+# TARGET GROUP (Points to Kong API Gateway NodePort)
 # ========================================
 # Uses 'instance' type for ASG attachment, 'ip' type for static IPs
 
@@ -41,8 +41,8 @@ locals {
   use_asg = var.worker_asg_name != ""
 }
 
-resource "aws_lb_target_group" "istio" {
-  name        = "${var.project_name}-istio-tg"
+resource "aws_lb_target_group" "kong" {
+  name        = "${var.project_name}-kong-tg"
   port        = var.worker_node_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -68,7 +68,7 @@ resource "aws_lb_target_group" "istio" {
   }
 
   tags = {
-    Name        = "${var.project_name}-istio-tg"
+    Name        = "${var.project_name}-kong-tg"
     Environment = var.environment
   }
 }
@@ -78,11 +78,11 @@ resource "aws_lb_target_group" "istio" {
 # ========================================
 # Attaches the ASG to target group so instances are auto-registered
 
-resource "aws_autoscaling_attachment" "istio" {
+resource "aws_autoscaling_attachment" "kong" {
   count = local.use_asg ? 1 : 0
 
   autoscaling_group_name = var.worker_asg_name
-  lb_target_group_arn    = aws_lb_target_group.istio.arn
+  lb_target_group_arn    = aws_lb_target_group.kong.arn
 }
 
 # ========================================
@@ -93,7 +93,7 @@ resource "aws_autoscaling_attachment" "istio" {
 resource "aws_lb_target_group_attachment" "workers" {
   count = local.use_asg ? 0 : length(var.worker_node_ips)
 
-  target_group_arn = aws_lb_target_group.istio.arn
+  target_group_arn = aws_lb_target_group.kong.arn
   target_id        = var.worker_node_ips[count.index]
   port             = var.worker_node_port
 }
@@ -111,7 +111,7 @@ resource "aws_lb_listener" "https" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.istio.arn
+    target_group_arn = aws_lb_target_group.kong.arn
   }
 
   tags = {
