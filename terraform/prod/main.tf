@@ -248,7 +248,7 @@ module "alb" {
   private_subnet_ids = module.networking.private_subnet_ids
   domain_name        = var.domain_name
   certificate_arn    = module.dns.validated_certificate_arn
-  worker_node_port   = 30080 # Kong proxy NodePort
+  worker_node_port   = 30080 # Istio IngressGateway NodePort
 
   # Use ASG for dynamic target registration (recommended for auto-scaling)
   worker_asg_name = module.kubernetes.asg_name
