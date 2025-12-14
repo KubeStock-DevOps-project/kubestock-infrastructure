@@ -222,6 +222,23 @@ resource "aws_security_group" "nlb_api" {
     security_groups = [aws_security_group.dev_server.id]
   }
 
+  # Kiali (Istio UI Dashboard)
+  ingress {
+    description     = "Kiali from bastion"
+    from_port       = 20001
+    to_port         = 20001
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "Kiali from dev server"
+    from_port       = 20001
+    to_port         = 20001
+    protocol        = "tcp"
+    security_groups = [aws_security_group.dev_server.id]
+  }
+
   egress {
     description = "Allow all outbound"
     from_port   = 0
