@@ -54,7 +54,7 @@ resource "aws_lb_target_group" "istio" {
     interval            = 30
     matcher             = "200"
     path                = var.health_check_path
-    port                = "15021"
+    port                = "traffic-port"
     protocol            = "HTTP"
     timeout             = 5
     unhealthy_threshold = 3
