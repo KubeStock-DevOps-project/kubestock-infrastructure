@@ -77,13 +77,13 @@ output "target_group_arn" {
   value       = aws_lb_target_group.k8s_api.arn
 }
 
-output "istio_http_endpoint" {
-  description = "Istio IngressGateway HTTP endpoint - Production (NLB DNS:80)"
+output "kong_http_endpoint" {
+  description = "Kong API Gateway HTTP endpoint - Production (NLB DNS:80)"
   value       = "http://${aws_lb.k8s_api.dns_name}"
 }
 
-output "istio_staging_http_endpoint" {
-  description = "Istio IngressGateway HTTP endpoint - Staging (NLB DNS:81)"
+output "kong_staging_http_endpoint" {
+  description = "Kong API Gateway HTTP endpoint - Staging (NLB DNS:81)"
   value       = "http://${aws_lb.k8s_api.dns_name}:81"
 }
 

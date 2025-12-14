@@ -341,10 +341,10 @@ resource "aws_security_group" "workers" {
     security_groups = [aws_security_group.nlb_api.id]
   }
 
-  # Zero-trust: Only allow Istio IngressGateway port (30080) from ALB
+  # Zero-trust: Only allow Kong API Gateway port (30080) from ALB
   # This is the only service that should be exposed to production traffic
   ingress {
-    description     = "Istio IngressGateway from ALB (production traffic - port 30080 only)"
+    description     = "Kong API Gateway from ALB (production traffic - port 30080 only)"
     from_port       = 30080
     to_port         = 30080
     protocol        = "tcp"

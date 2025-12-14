@@ -556,12 +556,12 @@ resource "aws_lb_listener" "k8s_api" {
 }
 
 # ========================================
-# TARGET GROUP - ISTIO INGRESSGATEWAY (HTTP)
-# NLB Port 80 → Istio IngressGateway NodePort 30080
+# TARGET GROUP - KONG API GATEWAY (Production HTTP)
+# NLB Port 80 → Kong NodePort 30080
 # ========================================
 
-resource "aws_lb_target_group" "istio_http" {
-  name        = "${var.project_name}-istio-http"
+resource "aws_lb_target_group" "kong_http" {
+  name        = "${var.project_name}-kong-http"
   port        = 30080
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -579,29 +579,29 @@ resource "aws_lb_target_group" "istio_http" {
   deregistration_delay = 30
 
   tags = {
-    Name = "${var.project_name}-istio-http-tg"
+    Name = "${var.project_name}-kong-http-tg"
   }
 }
 
-resource "aws_lb_listener" "istio_http" {
+resource "aws_lb_listener" "kong_http" {
   load_balancer_arn = aws_lb.k8s_api.arn
   port              = 80
   protocol          = "TCP"
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.istio_http.arn
+    target_group_arn = aws_lb_target_group.kong_http.arn
   }
 }
 
 # ========================================
-# TARGET GROUP - ISTIO STAGING INGRESSGATEWAY (HTTP)
-# NLB Port 81 → Istio Staging IngressGateway NodePort 30081
+# TARGET GROUP - KONG API GATEWAY (Staging HTTP)
+# NLB Port 81 → Kong Staging NodePort 30081
 # For dev access via SSH tunnel
 # ========================================
 
-resource "aws_lb_target_group" "istio_staging_http" {
-  name        = "${var.project_name}-istio-stg-http"
+resource "aws_lb_target_group" "kong_staging_http" {
+  name        = "${var.project_name}-kong-stg-http"
   port        = 30081
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -619,18 +619,18 @@ resource "aws_lb_target_group" "istio_staging_http" {
   deregistration_delay = 30
 
   tags = {
-    Name = "${var.project_name}-istio-stg-http-tg"
+    Name = "${var.project_name}-kong-stg-http-tg"
   }
 }
 
-resource "aws_lb_listener" "istio_staging_http" {
+resource "aws_lb_listener" "kong_staging_http" {
   load_balancer_arn = aws_lb.k8s_api.arn
   port              = 81
   protocol          = "TCP"
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.istio_staging_http.arn
+    target_group_arn = aws_lb_target_group.kong_staging_http.arn
   }
 }
 
@@ -674,17 +674,17 @@ resource "aws_lb_listener" "argocd_ui" {
 
 # ========================================
 # TARGET GROUP ATTACHMENTS - ASG WORKERS
-# Auto-registers workers for Istio and ArgoCD
+# Auto-registers workers for Kong and ArgoCD
 # ========================================
 
-resource "aws_autoscaling_attachment" "istio_http" {
+resource "aws_autoscaling_attachment" "kong_http" {
   autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
-  lb_target_group_arn    = aws_lb_target_group.istio_http.arn
+  lb_target_group_arn    = aws_lb_target_group.kong_http.arn
 }
 
-resource "aws_autoscaling_attachment" "istio_staging_http" {
+resource "aws_autoscaling_attachment" "kong_staging_http" {
   autoscaling_group_name = aws_autoscaling_group.k8s_workers.name
-  lb_target_group_arn    = aws_lb_target_group.istio_staging_http.arn
+  lb_target_group_arn    = aws_lb_target_group.kong_staging_http.arn
 }
 
 resource "aws_autoscaling_attachment" "argocd_ui" {
