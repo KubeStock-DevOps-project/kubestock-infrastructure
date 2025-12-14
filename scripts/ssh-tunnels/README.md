@@ -19,24 +19,24 @@ Your Machine          Bastion Host              NLB                Worker Nodes
 ============          ============              ===                ============
 
 Staging (via kong-staging namespace):
-localhost:5173  →  SSH Tunnel  →  nlb:81    →  NodePort 30081 (Kong Staging HTTP)
-localhost:5174  →  SSH Tunnel  →  nlb:444   →  NodePort 30445 (Kong Staging HTTPS)
+localhost:8081  →  SSH Tunnel  →  nlb:81    →  NodePort 30081 (Kong Staging HTTP)
 
-Production (via kong namespace - also accessible via ALB):
+Production (via kong namespace):
 localhost:8080  →  SSH Tunnel  →  nlb:80    →  NodePort 30080 (Kong Production HTTP)
-localhost:8443  →  SSH Tunnel  →  nlb:443   →  NodePort 30444 (Kong Production HTTPS)
 
 ArgoCD & Kubernetes API:
-localhost:9443  →  SSH Tunnel  →  nlb:8443  →  NodePort 30443 (ArgoCD)
+localhost:8443  →  SSH Tunnel  →  nlb:8443  →  NodePort 30443 (ArgoCD)
 localhost:6443  →  SSH Tunnel  →  nlb:6443  →  Control Plane 6443
 
-Observability Stack (shared by staging & production):
+Observability Stack (production only):
 localhost:3000  →  SSH Tunnel  →  nlb:3000  →  NodePort 30300 (Grafana)
 localhost:9090  →  SSH Tunnel  →  nlb:9090  →  NodePort 30090 (Prometheus)
-localhost:9093  →  SSH Tunnel  →  nlb:9093  →  NodePort 30093 (Alertmanager - prod only)
+localhost:9093  →  SSH Tunnel  →  nlb:9093  →  NodePort 30093 (Alertmanager)
+localhost:20001 →  SSH Tunnel  →  nlb:20001 →  Kiali (Istio UI)
 ```
 
-**Production is also accessible via ALB at: https://kubestock.dpiyumal.me**
+**Production HTTPS is accessible via ALB at: https://kubestock.dpiyumal.me**
+(ALB handles TLS termination)
 
 ## Available Scripts
 
@@ -49,17 +49,17 @@ These scripts open **all common tunnels at once** in a single SSH session:
 
 | Purpose                  | Local Endpoint             | NLB Port |
 |--------------------------|---------------------------|----------|
-| Staging Frontend (HTTP)  | `http://localhost:5173`   | `80`     |
-| Staging Frontend (HTTPS) | `https://localhost:5174`  | `443`    |
+| Production (HTTP)        | `http://localhost:8080`   | `80`     |
+| Staging (HTTP)           | `http://localhost:8081`   | `81`     |
 | Kubernetes API           | `https://localhost:6443`  | `6443`   |
 | ArgoCD UI                | `https://localhost:8443`  | `8443`   |
 | Grafana                  | `http://localhost:3000`   | `3000`   |
 | Prometheus               | `http://localhost:9090`   | `9090`   |
 | Alertmanager (prod only) | `http://localhost:9093`   | `9093`   |
+| Kiali (Istio UI)         | `http://localhost:20001`  | `20001`  |
 
-> The previous per-service scripts (e.g. `tunnel-grafana.sh`, `tunnel-prometheus.sh`,
-> `tunnel-k8s-api.sh`, etc.) have been consolidated into these two unified scripts
-> to keep usage simple and consistent.
+> **Note**: Production HTTPS traffic uses the ALB at https://kubestock.dpiyumal.me
+> which handles TLS termination. No HTTPS tunnels are needed.
 
 ## Setup Instructions
 
