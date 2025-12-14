@@ -120,9 +120,9 @@ resource "aws_security_group" "nlb_api" {
     security_groups = [aws_security_group.dev_server.id]
   }
 
-  # Staging frontend HTTP
+  # Production Istio IngressGateway HTTP
   ingress {
-    description     = "HTTP from bastion"
+    description     = "Istio HTTP from bastion"
     from_port       = 80
     to_port         = 80
     protocol        = "tcp"
@@ -130,26 +130,9 @@ resource "aws_security_group" "nlb_api" {
   }
 
   ingress {
-    description     = "HTTP from dev server"
+    description     = "Istio HTTP from dev server"
     from_port       = 80
     to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  # Staging frontend HTTPS
-  ingress {
-    description     = "HTTPS from bastion"
-    from_port       = 443
-    to_port         = 443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  ingress {
-    description     = "HTTPS from dev server"
-    from_port       = 443
-    to_port         = 443
     protocol        = "tcp"
     security_groups = [aws_security_group.dev_server.id]
   }
@@ -171,9 +154,9 @@ resource "aws_security_group" "nlb_api" {
     security_groups = [aws_security_group.dev_server.id]
   }
 
-  # Staging Kong HTTP (port 81)
+  # Staging Istio HTTP (port 81)
   ingress {
-    description     = "Staging Kong HTTP from bastion"
+    description     = "Staging Istio HTTP from bastion"
     from_port       = 81
     to_port         = 81
     protocol        = "tcp"
@@ -181,26 +164,9 @@ resource "aws_security_group" "nlb_api" {
   }
 
   ingress {
-    description     = "Staging Kong HTTP from dev server"
+    description     = "Staging Istio HTTP from dev server"
     from_port       = 81
     to_port         = 81
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  # Staging Kong HTTPS (port 444)
-  ingress {
-    description     = "Staging Kong HTTPS from bastion"
-    from_port       = 444
-    to_port         = 444
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  ingress {
-    description     = "Staging Kong HTTPS from dev server"
-    from_port       = 444
-    to_port         = 444
     protocol        = "tcp"
     security_groups = [aws_security_group.dev_server.id]
   }
@@ -358,10 +324,10 @@ resource "aws_security_group" "workers" {
     security_groups = [aws_security_group.nlb_api.id]
   }
 
-  # Zero-trust: Only allow Kong proxy port (30080) from ALB
+  # Zero-trust: Only allow Istio IngressGateway port (30080) from ALB
   # This is the only service that should be exposed to production traffic
   ingress {
-    description     = "Kong proxy from ALB (production traffic - port 30080 only)"
+    description     = "Istio IngressGateway from ALB (production traffic - port 30080 only)"
     from_port       = 30080
     to_port         = 30080
     protocol        = "tcp"

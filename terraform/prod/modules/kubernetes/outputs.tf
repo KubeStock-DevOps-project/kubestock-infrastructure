@@ -56,9 +56,9 @@ output "launch_template_id" {
   value       = aws_launch_template.k8s_worker.id
 }
 
-# Load Balancer (API + staging apps consolidated)
+# Load Balancer (API + Istio IngressGateway)
 output "nlb_dns_name" {
-  description = "DNS name of the NLB (for K8s API + staging apps)"
+  description = "DNS name of the NLB (for K8s API + Istio IngressGateway)"
   value       = aws_lb.k8s_api.dns_name
 }
 
@@ -77,14 +77,14 @@ output "target_group_arn" {
   value       = aws_lb_target_group.k8s_api.arn
 }
 
-output "staging_frontend_http_endpoint" {
-  description = "Staging frontend HTTP endpoint (NLB DNS:80)"
+output "istio_http_endpoint" {
+  description = "Istio IngressGateway HTTP endpoint - Production (NLB DNS:80)"
   value       = "http://${aws_lb.k8s_api.dns_name}"
 }
 
-output "staging_frontend_https_endpoint" {
-  description = "Staging frontend HTTPS endpoint (NLB DNS:443)"
-  value       = "https://${aws_lb.k8s_api.dns_name}"
+output "istio_staging_http_endpoint" {
+  description = "Istio IngressGateway HTTP endpoint - Staging (NLB DNS:81)"
+  value       = "http://${aws_lb.k8s_api.dns_name}:81"
 }
 
 output "argocd_ui_endpoint" {
