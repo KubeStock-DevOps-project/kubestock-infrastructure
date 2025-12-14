@@ -46,9 +46,9 @@ This guide explains how to set up an Auto Scaling Group (ASG) for Kubernetes wor
 ## Current Configuration
 
 - **AMI**: \`ami-03a1d146e75612e44\` (kubestock-worker-golden-ami-v5 - with provider ID and topology labels)
-- **ASG Capacity**: min=1, desired=2, max=5
+- **ASG Capacity**: min=1, desired=2, max=8
 - **Token Refresh**: Every 12 hours via Lambda
-- **Scaling**: Manual or via Kubernetes Cluster Autoscaler (recommended)
+- **Scaling**: Kubernetes Cluster Autoscaler (automated)
 
 ## SSM Parameters
 
@@ -100,7 +100,66 @@ aws logs tail /aws/lambda/kubestock-refresh-join-token --follow
 
 ## Scaling
 
-### Manual Scaling
+### Kubernetes Cluster Autoscaler (Automated)
+
+Cluster Autoscaler is deployed via GitOps and automatically manages node scaling. AWS CPU-based scaling policies are **NOT used** because they are unaware of Kubernetes constraints (pending pods, resource requests, etc.).
+
+Cluster Autoscaler provides:
+- **Scale Up**: Automatically adds nodes when pods can't be scheduled
+- **Scale Down**: Removes underutilized nodes (below 50% utilization for 10+ minutes)
+- Respects pod disruption budgets and gracefully drains nodes
+- Understands node taints/labels and pod affinity
+- Auto-discovers ASGs via tags (\`k8s.io/cluster-autoscaler/enabled\`, \`k8s.io/cluster-autoscaler/kubestock\`)
+
+#### Configuration
+
+- **ASG Discovery**: Automatic via tags
+- **Min nodes**: 1
+- **Max nodes**: 8
+- **Scale-down threshold**: 50% utilization
+- **Scale-down delay**: 10 minutes after scale-up
+- **Expander strategy**: least-waste
+
+#### Check Status
+
+\`\`\`bash
+# View autoscaler pod
+kubectl get pods -n cluster-autoscaler
+
+# View logs
+kubectl logs -n cluster-autoscaler -l app=cluster-autoscaler -f
+
+# View status ConfigMap
+kubectl get cm cluster-autoscaler-status -n cluster-autoscaler -o yaml
+
+# View current nodes
+kubectl get nodes
+\`\`\`
+
+#### Testing Scale Up
+
+\`\`\`bash
+# Deploy resource-intensive workload
+kubectl create deployment scale-test --image=nginx --replicas=20
+kubectl set resources deployment scale-test --requests=cpu=500m,memory=512Mi
+
+# Watch nodes scale up (usually within 2-3 minutes)
+watch kubectl get nodes
+\`\`\`
+
+#### Testing Scale Down
+
+\`\`\`bash
+# Delete workload
+kubectl delete deployment scale-test
+
+# Nodes will scale down after 10+ minutes of being underutilized
+watch kubectl get nodes
+\`\`\`
+
+### Manual Scaling (Not Recommended)
+
+For emergency situations only. Cluster Autoscaler will override manual changes:
 
 \`\`\`bash
 # Scale to 3 workers
@@ -110,41 +169,6 @@ aws autoscaling set-desired-capacity \
 
 # Watch nodes join
 watch kubectl get nodes
-\`\`\`
-
-### Kubernetes Cluster Autoscaler (Recommended)
-
-AWS CPU-based scaling policies are **NOT used** because they are unaware of Kubernetes constraints (pending pods, resource requests, etc.).
-
-For production, deploy Kubernetes Cluster Autoscaler which:
-- Scales based on pending pods
-- Respects pod disruption budgets
-- Understands node taints/labels
-- Performs graceful node draining
-
-\`\`\`yaml
-# Deploy cluster-autoscaler (example)
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: cluster-autoscaler
-  namespace: kube-system
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: cluster-autoscaler
-  template:
-    spec:
-      serviceAccountName: cluster-autoscaler
-      containers:
-      - name: cluster-autoscaler
-        image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.29.0
-        command:
-        - ./cluster-autoscaler
-        - --cloud-provider=aws
-        - --nodes=1:5:kubestock-workers-asg
-        - --skip-nodes-with-local-storage=false
 \`\`\`
 
 ## Node Join Process

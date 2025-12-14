@@ -122,5 +122,5 @@ variable "asg_min_size" {
 variable "asg_max_size" {
   description = "Maximum number of worker nodes in ASG"
   type        = number
-  default     = 5
+  default     = 8
 }
