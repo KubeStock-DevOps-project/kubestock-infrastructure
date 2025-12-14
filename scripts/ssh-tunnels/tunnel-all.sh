@@ -5,8 +5,7 @@
 # This script opens SSH tunnels for all commonly used
 # KubeStock endpoints in a single SSH session:
 #
-# - Production (HTTP):         http://localhost:8080  -> NLB:80 (Kong prod)
-# - Staging (HTTP):            http://localhost:8081  -> NLB:81 (Kong staging)
+# - Staging (HTTP):            http://localhost:5173  -> NLB:81 (Kong staging)
 # - Kubernetes API:            https://localhost:6443
 # - ArgoCD UI:                 https://localhost:8443
 # - Grafana (prod):            http://localhost:3000
@@ -14,8 +13,8 @@
 # - Alertmanager (prod only):  http://localhost:9093
 # - Kiali (Istio UI):          http://localhost:20001
 #
-# NOTE: Production HTTPS traffic goes through ALB with TLS termination
-#       Use https://kubestock.dpiyumal.me for production HTTPS access
+# NOTE: Production traffic goes through ALB with TLS termination
+#       Use https://kubestock.dpiyumal.me for production access
 #
 # It relies on the same environment variables as the
 # previous per-service scripts:
@@ -54,8 +53,7 @@ echo "NLB:     ${REMOTE_NLB}"
 echo "SSH key: ${KEY_PATH}"
 echo "----------------------------------------"
 echo "Local endpoints that will be available:"
-echo "  Production (HTTP):   http://localhost:8080  -> NLB:80 (Kong prod)"
-echo "  Staging (HTTP):      http://localhost:8081  -> NLB:81 (Kong staging)"
+echo "  Staging (HTTP):      http://localhost:5173  -> NLB:81 (Kong staging)"
 echo "  Kubernetes API:      https://localhost:6443 -> NLB:6443"
 echo "  ArgoCD UI:           https://localhost:8443 -> NLB:8443"
 echo "  Grafana (prod):      http://localhost:3000  -> NLB:3000"
@@ -63,7 +61,7 @@ echo "  Prometheus (prod):   http://localhost:9090  -> NLB:9090"
 echo "  Alertmanager (prod): http://localhost:9093  -> NLB:9093"
 echo "  Kiali (Istio UI):    http://localhost:20001 -> NLB:20001"
 echo ""
-echo "NOTE: For HTTPS production access, use https://kubestock.dpiyumal.me"
+echo "NOTE: For production access, use https://kubestock.dpiyumal.me"
 echo "      (ALB handles TLS termination)"
 echo "========================================"
 echo "Press Ctrl+C to close ALL tunnels."
@@ -74,17 +72,17 @@ echo ""
 # start and stop together.
 #
 # Port mappings:
-#   8080 -> NLB:80  = Kong Production (HTTP)
-#   8081 -> NLB:81  = Kong Staging (HTTP)
+#   5173 -> NLB:81  = Kong Staging (HTTP)
 #   6443 -> NLB:6443 = Kubernetes API
 #   8443 -> NLB:8443 = ArgoCD
 #   3000 -> NLB:3000 = Grafana (prod)
 #   9090 -> NLB:9090 = Prometheus (prod)
 #   9093 -> NLB:9093 = Alertmanager (prod)
 #   20001 -> NLB:20001 = Kiali
+#
+# NOTE: Production is accessed via ALB at https://kubestock.dpiyumal.me
 ssh -i "${KEY_PATH}" \
-  -L 8080:"${REMOTE_NLB}":80 \
-  -L 8081:"${REMOTE_NLB}":81 \
+  -L 5173:"${REMOTE_NLB}":81 \
   -L 6443:"${REMOTE_NLB}":6443 \
   -L 8443:"${REMOTE_NLB}":8443 \
   -L 3000:"${REMOTE_NLB}":3000 \
