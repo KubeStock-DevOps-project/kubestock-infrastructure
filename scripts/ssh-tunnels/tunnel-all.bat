@@ -14,6 +14,7 @@ REM   Grafana (staging):   http://localhost:3001  -> NLB:3001
 REM   Prometheus (prod):   http://localhost:9090  -> NLB:9090
 REM   Prometheus (staging):http://localhost:9091  -> NLB:9091
 REM   Alertmanager (prod): http://localhost:9093  -> NLB:9093
+REM   Kiali (Istio UI):    http://localhost:20001 -> NLB:20001
 REM
 REM Environment variables used:
 REM   KUBESTOCK_BASTION_IP  - bastion public IP
@@ -64,6 +65,7 @@ echo   Grafana (staging):   http://localhost:3001
 echo   Prometheus (prod):   http://localhost:9090
 echo   Prometheus (staging):http://localhost:9091
 echo   Alertmanager (prod): http://localhost:9093
+echo   Kiali (Istio UI):    http://localhost:20001
 echo ========================================
 echo Press Ctrl+C to close ALL tunnels.
 echo.
@@ -78,6 +80,7 @@ ssh -i "%KEY_PATH%" ^
   -L 9090:%REMOTE_NLB%:9090 ^
   -L 9091:%REMOTE_NLB%:9091 ^
   -L 9093:%REMOTE_NLB%:9093 ^
+  -L 20001:%REMOTE_NLB%:20001 ^
   %BASTION% -N
 
 endlocal
