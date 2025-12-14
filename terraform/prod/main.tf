@@ -119,8 +119,10 @@ module "kubernetes" {
   nlb_api_sg_id       = module.security.nlb_api_sg_id
 
   # Control Plane
-  control_plane_instance_type = var.control_plane_instance_type
-  control_plane_private_ip    = var.control_plane_private_ip
+  control_plane_instance_type    = var.control_plane_instance_type
+  control_plane_private_ip       = var.control_plane_private_ip
+  additional_control_plane_count = var.additional_control_plane_count
+  additional_control_plane_ips   = var.additional_control_plane_ips
 
   # Worker Nodes
   worker_instance_type      = var.worker_instance_type

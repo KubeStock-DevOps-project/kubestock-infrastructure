@@ -66,8 +66,20 @@ variable "control_plane_instance_type" {
 }
 
 variable "control_plane_private_ip" {
-  description = "Static private IP for control plane"
+  description = "Static private IP for primary control plane (master-1)"
   type        = string
+}
+
+variable "additional_control_plane_count" {
+  description = "Number of additional control plane nodes (for HA cluster)"
+  type        = number
+  default     = 0
+}
+
+variable "additional_control_plane_ips" {
+  description = "Static private IPs for additional control plane nodes"
+  type        = list(string)
+  default     = []
 }
 
 # Worker Nodes

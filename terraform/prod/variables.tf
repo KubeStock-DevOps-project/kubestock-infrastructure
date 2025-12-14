@@ -118,9 +118,21 @@ variable "worker_volume_size" {
 }
 
 variable "control_plane_private_ip" {
-  description = "Static private IP address for the Kubernetes control plane (must be within the first private subnet)"
+  description = "Static private IP address for the primary Kubernetes control plane (must be within the first private subnet)"
   type        = string
   default     = "10.0.10.21"
+}
+
+variable "additional_control_plane_count" {
+  description = "Number of additional control plane nodes for HA (0-2 recommended)"
+  type        = number
+  default     = 0
+}
+
+variable "additional_control_plane_ips" {
+  description = "Static private IPs for additional control plane nodes (in AZ-b and AZ-c subnets)"
+  type        = list(string)
+  default     = []
 }
 
 variable "worker_private_ips" {

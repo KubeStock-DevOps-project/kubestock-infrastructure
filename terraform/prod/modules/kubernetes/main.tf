@@ -293,6 +293,44 @@ resource "aws_instance" "control_plane" {
 }
 
 # ========================================
+# ADDITIONAL CONTROL PLANE NODES (HA)
+# ========================================
+# These nodes will be joined to the cluster using kubespray
+# for high availability of the Kubernetes control plane
+
+resource "aws_instance" "additional_control_plane" {
+  count         = var.additional_control_plane_count
+  ami           = var.ubuntu_ami_id
+  instance_type = var.control_plane_instance_type
+  # Distribute across AZs: master-2 in AZ-b (index 1), master-3 in AZ-c (index 2)
+  subnet_id     = var.private_subnet_ids[(count.index % 2) + 1]
+  private_ip    = var.additional_control_plane_ips[count.index]
+  vpc_security_group_ids = [
+    var.control_plane_sg_id,
+    var.k8s_common_sg_id
+  ]
+  key_name             = var.key_pair_name
+  iam_instance_profile = aws_iam_instance_profile.k8s_nodes.name
+
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+  }
+
+  lifecycle {
+    ignore_changes = [ami]
+  }
+
+  tags = {
+    Name                                            = "${var.project_name}-control-plane-${count.index + 2}"
+    Role                                            = "control-plane"
+    "kubernetes.io/cluster/${var.project_name}"     = "owned"
+    "k8s.io/cluster-autoscaler/${var.project_name}" = "owned"
+    "k8s.io/cluster-autoscaler/enabled"             = "true"
+  }
+}
+
+# ========================================
 # STATIC WORKER NODES (DISABLED - Using ASG)
 # ========================================
 
@@ -878,5 +916,13 @@ resource "aws_autoscaling_attachment" "kiali" {
 resource "aws_lb_target_group_attachment" "k8s_api" {
   target_group_arn = aws_lb_target_group.k8s_api.arn
   target_id        = aws_instance.control_plane.id
+  port             = 6443
+}
+
+# Attach additional control planes to NLB for HA
+resource "aws_lb_target_group_attachment" "k8s_api_additional" {
+  count            = var.additional_control_plane_count
+  target_group_arn = aws_lb_target_group.k8s_api.arn
+  target_id        = aws_instance.additional_control_plane[count.index].id
   port             = 6443
 }

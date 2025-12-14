@@ -20,13 +20,24 @@ output "k8s_node_instance_profile_name" {
 
 # Control Plane
 output "control_plane_instance_id" {
-  description = "Instance ID of the control plane"
+  description = "Instance ID of the primary control plane"
   value       = aws_instance.control_plane.id
 }
 
 output "control_plane_private_ip" {
-  description = "Private IP of the control plane"
+  description = "Private IP of the primary control plane"
   value       = aws_instance.control_plane.private_ip
+}
+
+# Additional Control Planes (HA)
+output "additional_control_plane_instance_ids" {
+  description = "Instance IDs of additional control plane nodes"
+  value       = aws_instance.additional_control_plane[*].id
+}
+
+output "additional_control_plane_private_ips" {
+  description = "Private IPs of additional control plane nodes"
+  value       = aws_instance.additional_control_plane[*].private_ip
 }
 
 # Workers
