@@ -248,7 +248,7 @@ module "alb" {
   private_subnet_ids = module.networking.private_subnet_ids
   domain_name        = var.domain_name
   certificate_arn    = module.dns.validated_certificate_arn
-  worker_node_port   = 30080 # Kong proxy NodePort
+  worker_node_port   = 30080 # Istio IngressGateway NodePort
 
   # Use ASG for dynamic target registration (recommended for auto-scaling)
   worker_asg_name = module.kubernetes.asg_name
@@ -256,7 +256,7 @@ module "alb" {
   # Static IPs as fallback (only used if ASG name is empty)
   worker_node_ips = var.worker_node_ips
 
-  health_check_path     = "/api/gateway/health"
+  health_check_path     = "/healthz/ready"
   enable_waf            = var.enable_waf
   waf_rate_limit        = var.waf_rate_limit
   alb_security_group_id = module.security.alb_sg_id

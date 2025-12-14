@@ -39,7 +39,7 @@ variable "certificate_arn" {
 }
 
 variable "worker_node_port" {
-  description = "NodePort of Kong proxy service"
+  description = "NodePort of Istio IngressGateway service"
   type        = number
   default     = 30080
 }
@@ -61,7 +61,7 @@ variable "worker_node_ips" {
 variable "health_check_path" {
   description = "Health check path for ALB target group"
   type        = string
-  default     = "/api/gateway/health"  # Kong health check endpoint
+  default     = "/healthz/ready"
 }
 
 variable "enable_waf" {
