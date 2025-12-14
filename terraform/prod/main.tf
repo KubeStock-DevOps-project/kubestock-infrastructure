@@ -256,7 +256,7 @@ module "alb" {
   # Static IPs as fallback (only used if ASG name is empty)
   worker_node_ips = var.worker_node_ips
 
-  health_check_path     = "/healthz/ready"
+  health_check_path     = "/api/gateway/health"
   enable_waf            = var.enable_waf
   waf_rate_limit        = var.waf_rate_limit
   alb_security_group_id = module.security.alb_sg_id
