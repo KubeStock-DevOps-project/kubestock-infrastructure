@@ -1,23 +1,12 @@
 # ========================================
-# ECR MODULE
-# ========================================
-# ECR repositories for microservices
-# NOTE: ECR pull credentials are now managed by kubestock-external-secrets IAM user
-# in the secrets module. This module only manages ECR repositories.
-
-data "aws_region" "current" {}
-data "aws_caller_identity" "current" {}
-
-# ========================================
 # ECR REPOSITORIES
 # ========================================
 
 resource "aws_ecr_repository" "microservices" {
-  for_each = toset(var.microservices)
+  for_each = toset(local.microservices)
 
   name                 = each.value
   image_tag_mutability = "MUTABLE"
-  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
@@ -41,18 +30,18 @@ resource "aws_ecr_repository" "microservices" {
 # ========================================
 
 resource "aws_ecr_lifecycle_policy" "microservices" {
-  for_each   = toset(var.microservices)
+  for_each   = toset(local.microservices)
   repository = aws_ecr_repository.microservices[each.value].name
 
   policy = jsonencode({
     rules = [
       {
         rulePriority = 1
-        description  = "Keep last ${var.image_retention_count} images"
+        description  = "Keep last 5 images"
         selection = {
           tagStatus   = "any"
           countType   = "imageCountMoreThan"
-          countNumber = var.image_retention_count
+          countNumber = 5
         }
         action = {
           type = "expire"
