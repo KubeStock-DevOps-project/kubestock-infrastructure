@@ -13,9 +13,14 @@ echo "=========================================="
 # Navigate to kubespray
 cd ~/kubestock-core/infrastructure/kubespray
 
-# Copy demo inventory
+# Copy demo inventory (force replace existing)
 echo "📋 Copying demo inventory..."
+rm -rf inventory/demo
 cp -r ../kubespray-inventory-demo inventory/demo
+
+# Ensure SSH key has correct permissions
+echo "🔑 Setting SSH key permissions..."
+chmod 600 ~/.ssh/id_ed25519
 
 # Create Python virtual environment
 echo "📦 Installing Python venv package..."
