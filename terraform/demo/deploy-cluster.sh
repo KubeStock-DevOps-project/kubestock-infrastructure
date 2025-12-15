@@ -11,7 +11,7 @@ echo "KubeStock Demo Cluster Deployment"
 echo "=========================================="
 
 # Navigate to kubespray
-cd ~/kubestock-infrastructure/infrastructure/kubespray
+cd ~/kubestock-core/infrastructure/kubespray
 
 # Copy demo inventory
 echo "📋 Copying demo inventory..."
