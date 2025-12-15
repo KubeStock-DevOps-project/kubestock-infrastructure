@@ -65,16 +65,20 @@ variable "private_subnet_cidrs" {
 # ========================================
 # SECURITY
 # ========================================
+# These are passed via GitHub Actions secrets (-var flag)
+# Set via repository secrets: MY_IP, SSH_PUBLIC_KEY_CONTENT
 
 variable "my_ip" {
   description = "Your IP address to allow SSH and API access (CIDR format, e.g., 1.2.3.4/32)"
   type        = string
+  default     = "0.0.0.0/0" # Override via -var in CI/CD
 }
 
 variable "ssh_public_key_content" {
   description = "Content of the SSH public key (not the file path)"
   type        = string
   sensitive   = true
+  default     = "" # Override via -var in CI/CD
 }
 
 # ========================================
@@ -183,10 +187,14 @@ variable "github_org" {
 # RDS DATABASES
 # ========================================
 
-variable "db_password" {
-  description = "Master password for RDS PostgreSQL databases"
+# NOTE: db_password is now generated automatically using random_password
+# and stored in AWS Secrets Manager. No need to pass it as a variable.
+
+variable "db_username" {
+  description = "Username for RDS usernames"
   type        = string
-  sensitive   = true
+  sensitive   = false
+  default     = "kubestock_admin"
 }
 
 variable "prod_db_instance_class" {

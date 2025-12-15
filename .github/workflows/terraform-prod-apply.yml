@@ -6,13 +6,14 @@ on:
         paths:
             - "terraform/**"
 
+env:
+    AWS_REGION: ap-south-1
+
 jobs:
     plan:
         runs-on: ubuntu-latest
-        outputs:
-            plan_file: ${{ steps.plan.outputs.plan_file }}
         permissions:
-            id-token: write # Required for AWS OIDC
+            id-token: write
             contents: read
         steps:
             - name: Checkout
@@ -23,40 +24,33 @@ jobs:
               with:
                   terraform_version: "1.13.5"
 
-            - name: Terraform Format Check (prod)
+            - name: Terraform Format Check
               working-directory: terraform/prod
               run: terraform fmt -check
 
-            # Configure AWS Credentials via OIDC
             - name: Configure AWS Credentials
               uses: aws-actions/configure-aws-credentials@v4
               with:
-                  role-to-assume: "arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role"
-                  aws-region: ${{ vars.AWS_REGION }}
+                  role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+                  aws-region: ${{ env.AWS_REGION }}
 
-            - name: Terraform Init (prod)
+            - name: Terraform Init
               working-directory: terraform/prod
               run: terraform init
 
-            - name: Terraform Validate (prod)
+            - name: Terraform Validate
               working-directory: terraform/prod
               run: terraform validate
 
-            - name: Generate terraform.tfvars
-              working-directory: terraform/prod
-              run: |
-                  cat > terraform.tfvars <<EOF
-                  my_ip = "${{ secrets.MY_IP }}"
-                  ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
-                  db_password = "${{ secrets.DB_PASSWORD }}"
-                  EOF
-
-            - name: Terraform Plan and Save
+            - name: Terraform Plan
               id: plan
               working-directory: terraform/prod
               run: |
                   set -o pipefail
-                  terraform plan -input=false -out=tfplan -no-color 2>&1 | tee plan_output.txt
+                  terraform plan -input=false -out=tfplan -no-color \
+                    -var="my_ip=${{ secrets.MY_IP }}" \
+                    -var="ssh_public_key_content=${{ secrets.SSH_PUBLIC_KEY_CONTENT }}" \
+                    2>&1 | tee plan_output.txt
 
             - name: Upload Plan Artifact
               if: success()
@@ -67,7 +61,7 @@ jobs:
                       terraform/prod/tfplan
                       terraform/prod/lambda/
 
-            - name: Upload Plan Output for Review
+            - name: Upload Plan Output
               if: always()
               uses: actions/upload-artifact@v4
               with:
@@ -98,22 +92,10 @@ jobs:
 
                       await core.summary
                         .addHeading(`${statusEmoji} Terraform Plan Results - ${statusText}`)
-                        .addRaw(planFailed ? 
-                          '__Plan failed. Please fix errors before merging.__' :
-                          '__Waiting for manual approval in production environment.__')
-                        .addRaw('\n\n<details><summary>Click to expand full plan output</summary>\n\n')
+                        .addRaw('<details><summary>Click to expand full plan output</summary>\n\n')
                         .addCodeBlock(truncatedPlan, 'terraform')
                         .addRaw('\n</details>')
                         .write();
-
-            # Clean up sensitive files immediately after upload
-            - name: Clean up sensitive files
-              if: always()
-              working-directory: terraform/prod
-              run: |
-                  rm -f terraform.tfvars
-                  rm -f tfplan
-                  rm -f plan_output.txt
 
     apply:
         runs-on: ubuntu-latest
@@ -130,14 +112,13 @@ jobs:
               with:
                   terraform_version: "1.13.5"
 
-            # Configure AWS Credentials via OIDC
             - name: Configure AWS Credentials
               uses: aws-actions/configure-aws-credentials@v4
               with:
-                  role-to-assume: "arn:aws:iam::478468757808:role/KubeStock-Terraform-Apply-Role"
-                  aws-region: ${{ vars.AWS_REGION }}
+                  role-to-assume: ${{ vars.AWS_APPLY_ROLE_ARN }}
+                  aws-region: ${{ env.AWS_REGION }}
 
-            - name: Terraform Init (prod)
+            - name: Terraform Init
               working-directory: terraform/prod
               run: terraform init
 
@@ -147,23 +128,6 @@ jobs:
                   name: deployment-plan
                   path: terraform/prod
 
-            - name: Generate terraform.tfvars
-              working-directory: terraform/prod
-              run: |
-                  cat > terraform.tfvars <<EOF
-                  my_ip = "${{ secrets.MY_IP }}"
-                  ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
-                  db_password = "${{ secrets.DB_PASSWORD }}"
-                  EOF
-
             - name: Terraform Apply
               working-directory: terraform/prod
               run: terraform apply -auto-approve tfplan
-
-            # Clean up sensitive files immediately after apply
-            - name: Clean up sensitive files
-              if: always()
-              working-directory: terraform/prod
-              run: |
-                  rm -f terraform.tfvars
-                  rm -f tfplan

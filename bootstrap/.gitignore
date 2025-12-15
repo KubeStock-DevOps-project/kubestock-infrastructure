@@ -1,0 +1,9 @@
+# Bootstrap secrets (NEVER commit these!)
+secrets.json
+*.tfvars.secret
+
+# Backups created by bootstrap
+backups/
+
+# Generated output
+github-vars.txt

@@ -261,6 +261,16 @@ output "ecr_repository_arns" {
   value       = module.ecr.repository_arns
 }
 
+output "ecr_pull_user_arn" {
+  description = "ARN of the IAM user for ECR pull access"
+  value       = module.ecr.ecr_pull_user_arn
+}
+
+output "ecr_credentials_secret_arn" {
+  description = "ARN of the Secrets Manager secret containing ECR credentials"
+  value       = module.ecr.ecr_credentials_secret_arn
+}
+
 # ========================================
 # LAMBDA
 # ========================================
@@ -336,41 +346,38 @@ output "asgardeo_secret_arns" {
   value       = module.secrets.asgardeo_secret_arns
 }
 
-output "db_secret_names" {
-  description = "Secrets Manager names for database credentials by environment"
-  value       = module.secrets.db_secret_names
-}
-
-output "asgardeo_secret_names" {
-  description = "Secrets Manager names for Asgardeo credentials by environment"
-  value       = module.secrets.asgardeo_secret_names
-}
-
-output "external_secrets_user_name" {
-  description = "IAM user for External Secrets Operator"
-  value       = module.secrets.external_secrets_user_name
-}
-
-output "external_secrets_access_key_id" {
-  description = "Access key ID for External Secrets Operator"
-  value       = module.secrets.external_secrets_access_key_id
-  sensitive   = true
-}
-
-output "external_secrets_secret_access_key" {
-  description = "Secret access key for External Secrets Operator"
-  value       = module.secrets.external_secrets_secret_access_key
-  sensitive   = true
+output "alertmanager_slack_secret_arn" {
+  description = "ARN of the Alertmanager Slack webhook secret (production only)"
+  value       = module.secrets.alertmanager_slack_secret_arn
 }
 
 output "test_runner_secret_arn" {
-  description = "ARN of test runner credentials secret"
+  description = "ARN of shared test runner credentials secret"
   value       = module.secrets.test_runner_secret_arn
 }
 
-output "test_runner_secret_name" {
-  description = "Name of test runner credentials secret"
-  value       = module.secrets.test_runner_secret_name
+output "external_secrets_user_arn" {
+  description = "ARN of IAM user for External Secrets Operator"
+  value       = module.secrets.external_secrets_user_arn
+}
+
+output "external_secrets_user_name" {
+  description = "Name of IAM user for External Secrets Operator"
+  value       = module.secrets.external_secrets_user_name
+}
+
+output "external_secrets_bootstrap_instructions" {
+  description = "Instructions to create access key and bootstrap ESO"
+  value       = <<-EOT
+    # Create IAM access key (one-time):
+    aws iam create-access-key --user-name ${module.secrets.external_secrets_user_name}
+    
+    # Create Kubernetes secret:
+    kubectl create secret generic aws-external-secrets-creds \
+      --from-literal=access-key-id=AKIAXXXXXXXX \
+      --from-literal=secret-access-key=XXXXXXXX \
+      --namespace=external-secrets
+  EOT
 }
 
 # ========================================

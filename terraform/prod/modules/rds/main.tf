@@ -74,6 +74,12 @@ resource "aws_db_instance" "production" {
     Name        = "${var.project_name}-prod-db"
     Environment = "production"
   }
+
+  # IMPORTANT: Don't change password after initial creation
+  # Password is managed via AWS Secrets Manager
+  lifecycle {
+    ignore_changes = [password]
+  }
 }
 
 # ========================================
@@ -130,6 +136,12 @@ resource "aws_db_instance" "staging" {
   tags = {
     Name        = "${var.project_name}-staging-db"
     Environment = "staging"
+  }
+
+  # IMPORTANT: Don't change password after initial creation
+  # Password is managed via AWS Secrets Manager
+  lifecycle {
+    ignore_changes = [password]
   }
 }
 

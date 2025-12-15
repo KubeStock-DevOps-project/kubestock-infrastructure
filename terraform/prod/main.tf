@@ -52,6 +52,24 @@ locals {
 }
 
 # ========================================
+# RANDOM PASSWORD (For DB - Generated Once)
+# ========================================
+# This password is generated on first apply and stored in Secrets Manager.
+# Terraform will use this for RDS, but the actual secret value in Secrets Manager
+# can be updated via AWS Console and Terraform will ignore those changes.
+
+resource "random_password" "db" {
+  length           = 32
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}:?"
+
+  # Don't regenerate if already exists
+  lifecycle {
+    ignore_changes = all
+  }
+}
+
+# ========================================
 # NETWORKING MODULE
 # ========================================
 
@@ -193,8 +211,9 @@ module "rds" {
   # Security Group (from security module)
   rds_sg_id = module.security.rds_sg_id
 
-  # Database Credentials
-  db_password = var.db_password
+  # Database Credentials - Using generated password
+  db_password = random_password.db.result
+  db_username = var.db_username
 
   # Production Database
   prod_instance_class      = var.prod_db_instance_class
@@ -208,14 +227,33 @@ module "rds" {
 # ========================================
 # SECRETS MANAGER MODULE
 # ========================================
+# Creates all secrets with initial/placeholder values.
+# Actual secret values are managed via AWS Console.
+# Terraform uses lifecycle { ignore_changes } to prevent overwriting.
 
 module "secrets" {
   source = "./modules/secrets"
 
   project_name   = local.project_name_lower
-  environments   = ["staging", "production"]
+  environments   = ["production", "staging"]
   aws_region     = data.aws_region.current.name
   aws_account_id = data.aws_caller_identity.current.account_id
+
+  # Database configuration - hosts/names from RDS, password from generated
+  db_hosts = {
+    production = module.rds.prod_db_address
+    staging    = module.rds.staging_db_address
+  }
+  db_names = {
+    production = module.rds.prod_db_name
+    staging    = module.rds.staging_db_name
+  }
+  db_username = var.db_username
+  db_password = random_password.db.result
+
+  # Security configuration - initial values (update via AWS Console)
+  my_ip                  = var.my_ip
+  ssh_public_key_content = var.ssh_public_key_content
 }
 
 # ========================================
