@@ -78,7 +78,7 @@ variable "prod_multi_az" {
 variable "prod_backup_retention_days" {
   description = "Number of days to retain automated backups for production"
   type        = number
-  default     = 7
+  default     = 0  # Demo: No backups
 }
 
 variable "prod_deletion_protection" {
@@ -112,7 +112,7 @@ variable "staging_db_name" {
 variable "staging_backup_retention_days" {
   description = "Number of days to retain automated backups for staging"
   type        = number
-  default     = 1
+  default     = 0  # Demo: No backups
 }
 
 # ========================================
