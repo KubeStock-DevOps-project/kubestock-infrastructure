@@ -61,7 +61,7 @@ output "bastion_public_ip" {
 
 output "bastion_ssh_command" {
   description = "SSH command to connect to the bastion host"
-  value       = "ssh -i ~/.ssh/kubestock-key ubuntu@${module.compute.bastion_public_ip}"
+  value       = "ssh ubuntu@${module.compute.bastion_public_ip}"
 }
 
 # ========================================
@@ -75,7 +75,7 @@ output "dev_server_public_ip" {
 
 output "dev_server_ssh_command" {
   description = "SSH command to connect to the development server"
-  value       = "ssh -i ~/.ssh/kubestock-key ubuntu@${module.compute.dev_server_public_ip}"
+  value       = "ssh ubuntu@${module.compute.dev_server_public_ip}"
 }
 
 output "dev_server_instance_id" {
@@ -114,7 +114,7 @@ output "control_plane_instance_id" {
 
 output "control_plane_ssh_via_bastion" {
   description = "SSH command to connect to control plane via bastion"
-  value       = "ssh -i ~/.ssh/kubestock-key -J ubuntu@${module.compute.bastion_public_ip} ubuntu@${module.kubernetes.control_plane_private_ip}"
+  value       = "ssh -J ubuntu@${module.compute.bastion_public_ip} ubuntu@${module.kubernetes.control_plane_private_ip}"
 }
 
 # ========================================
@@ -133,7 +133,7 @@ output "worker_instance_ids" {
 
 output "worker_ssh_commands" {
   description = "SSH commands to connect to worker nodes via bastion"
-  value       = [for ip in module.kubernetes.worker_private_ips : "ssh -i ~/.ssh/kubestock-key -J ubuntu@${module.compute.bastion_public_ip} ubuntu@${ip}"]
+  value       = [for ip in module.kubernetes.worker_private_ips : "ssh -J ubuntu@${module.compute.bastion_public_ip} ubuntu@${ip}"]
 }
 
 # ========================================
@@ -223,7 +223,7 @@ output "sg_nlb_api_id" {
 
 output "kubectl_config_command" {
   description = "Command to configure kubectl (run after K8s is installed)"
-  value       = "scp -i ~/.ssh/kubestock-key -J ubuntu@${module.compute.bastion_public_ip} ubuntu@${module.kubernetes.control_plane_private_ip}:~/.kube/config ~/.kube/config-kubestock"
+  value       = "scp -J ubuntu@${module.compute.bastion_public_ip} ubuntu@${module.kubernetes.control_plane_private_ip}:~/.kube/config ~/.kube/config-kubestock"
 }
 
 output "cluster_info" {
