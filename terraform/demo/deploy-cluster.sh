@@ -18,7 +18,8 @@ echo "📋 Copying demo inventory..."
 cp -r ../kubespray-inventory-demo inventory/demo
 
 # Create Python virtual environment
-sudo apt install python3.10-venv -y
+echo "📦 Installing Python venv package..."
+sudo apt install -y python3-venv python3-pip
 
 echo "🐍 Setting up Python environment..."
 python3 -m venv venv
@@ -31,7 +32,7 @@ pip install -r requirements.txt
 
 # Install Ansible collections
 echo "📚 Installing Ansible collections..."
-ansible-galaxy collection install -r requirements.yml
+ansible-galaxy collection install -f galaxy.yml
 
 # Test Ansible connectivity
 echo "🔌 Testing connectivity to cluster nodes..."
