@@ -9,10 +9,21 @@ cd infrastructure/terraform/demo
 cp terraform.tfvars.template terraform.tfvars
 ```
 
+Fetch Asgardeo secrets from production:
+```bash
+./fetch-secrets.sh
+# Copy the output to terraform.tfvars
+```
+
 Edit `terraform.tfvars`:
 ```hcl
 my_ip = "YOUR_IP/32"  # Get your IP: curl ifconfig.me
 ssh_public_key_content = "ssh-rsa AAAAB3NzaC1..."  # cat ~/.ssh/id_rsa.pub
+
+# From fetch-secrets.sh output:
+asgardeo_client_id     = "your-client-id"
+asgardeo_client_secret = "your-client-secret"
+asgardeo_base_url      = "https://api.asgardeo.io/t/your-org"
 ```
 
 ### 2. Deploy Infrastructure (15-20 minutes)
@@ -29,7 +40,10 @@ terraform apply -auto-approve
 terraform output bastion_public_ip
 terraform output dev_server_public_ip
 terraform output control_plane_private_ip
+terraform output alb_dns_name  # Use this URL to access your app (HTTP)
 ```
+
+**Access your application at:** `http://<alb_dns_name>`
 
 ### 4. Connect to Dev Server
 
@@ -67,10 +81,11 @@ kubectl get pods -A
 - ✅ 1 master + 4 worker Kubernetes cluster
 - ✅ Dev server with Terraform, Ansible, kubectl pre-installed
 - ✅ RDS databases (production + staging)
-- ✅ ALB with SSL certificate
+- ✅ ALB with **HTTP access** (no SSL certificate needed)
 - ✅ Full networking (NAT Gateway, subnets, security groups)
 - ✅ IAM roles for CI/CD and observability
 - ✅ All resources tagged with `-demo` suffix
+- ✅ Asgardeo secrets auto-configured from production
 
 ## ⏱️ Total Time Estimate
 
@@ -96,6 +111,9 @@ terraform destroy -auto-approve
 | ECR | Dedicated | Shared |
 | State Backend | S3 | Local |
 | Project Name | KubeStock | KubeStock-Demo |
+| Domain/SSL | Custom domain + HTTPS | ALB DNS + HTTP |
+| WAF | Enabled | Disabled |
+| Secrets | AWS Console | terraform.tfvars |
 
 ## 📝 Troubleshooting
 
@@ -111,6 +129,11 @@ terraform destroy -auto-approve
 - Verify network connectivity between nodes
 - Review Kubespray logs
 
+**Cannot fetch secrets:**
+- Ensure AWS CLI is configured with proper credentials
+- Verify you have access to production secrets
+- Check the secret name: `kubestock/production/asgardeo`
+
 ## 🎯 Demo Checklist
 
 - [ ] Infrastructure deployed successfully
@@ -120,7 +143,7 @@ terraform destroy -auto-approve
 - [ ] Ansible playbook completed successfully
 - [ ] `kubectl get nodes` shows 5 nodes (1 master, 4 workers)
 - [ ] All pods in kube-system namespace running
-- [ ] Can deploy a test application
+- [ ] Can access app via ALB DNS URL (HTTP)
 
 ---
 

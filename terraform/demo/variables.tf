@@ -278,3 +278,15 @@ variable "observability_metrics_retention_days" {
   type        = number
   default     = 365
 }
+
+# ========================================
+# ASGARDEO SECRETS
+# ========================================
+# Fetch from production using:
+# aws secretsmanager get-secret-value --secret-id kubestock/production/asgardeo --query SecretString --output text
+
+variable "asgardeo_secret_string" {
+  description = "Complete Asgardeo secret JSON from production"
+  type        = string
+  sensitive   = true
+}

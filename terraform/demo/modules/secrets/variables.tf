@@ -73,18 +73,21 @@ variable "db_password" {
   sensitive   = true
 }
 
-# -----------------------------------------------------------------------------
-# Security Configuration (Initial values, updated via AWS Console)
-# -----------------------------------------------------------------------------
 variable "my_ip" {
   description = "Initial IP for security group rules (CIDR format)"
   type        = string
-  default     = "0.0.0.0/32"
+  default     = "0.0.0.0/0"
 }
 
 variable "ssh_public_key_content" {
-  description = "Initial SSH public key content"
+  description = "SSH public key content"
   type        = string
-  default     = "ssh-rsa PLACEHOLDER"
+  sensitive   = true
+  default     = ""
+}
+
+variable "asgardeo_secret_string" {
+  description = "Complete Asgardeo secret JSON string from production"
+  type        = string
   sensitive   = true
 }

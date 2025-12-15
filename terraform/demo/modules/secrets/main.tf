@@ -62,7 +62,7 @@ resource "aws_secretsmanager_secret" "asgardeo" {
   for_each = local.environments
 
   name                    = "${var.project_name}/${each.key}/asgardeo"
-  description             = "Asgardeo OAuth credentials for ${var.project_name} ${each.key} - UPDATE VIA AWS CONSOLE"
+  description             = "Asgardeo OAuth credentials for ${var.project_name} ${each.key}"
   kms_key_id              = var.kms_key_id
   recovery_window_in_days = var.recovery_window_in_days
 
@@ -77,26 +77,8 @@ resource "aws_secretsmanager_secret" "asgardeo" {
 resource "aws_secretsmanager_secret_version" "asgardeo" {
   for_each = local.environments
 
-  secret_id = aws_secretsmanager_secret.asgardeo[each.key].id
-  secret_string = jsonencode({
-    ASGARDEO_ORG_NAME                 = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
-    ASGARDEO_BASE_URL                 = "https://api.asgardeo.io/t/PLACEHOLDER"
-    ASGARDEO_SCIM2_URL                = "https://api.asgardeo.io/t/PLACEHOLDER/scim2"
-    ASGARDEO_TOKEN_URL                = "https://api.asgardeo.io/t/PLACEHOLDER/oauth2/token"
-    ASGARDEO_JWKS_URL                 = "https://api.asgardeo.io/t/PLACEHOLDER/oauth2/jwks"
-    ASGARDEO_ISSUER                   = "https://api.asgardeo.io/t/PLACEHOLDER/oauth2/token"
-    ASGARDEO_SPA_CLIENT_ID            = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
-    ASGARDEO_M2M_CLIENT_ID            = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
-    ASGARDEO_M2M_CLIENT_SECRET        = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
-    ASGARDEO_GROUP_ID_ADMIN           = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
-    ASGARDEO_GROUP_ID_SUPPLIER        = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
-    ASGARDEO_GROUP_ID_WAREHOUSE_STAFF = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
-  })
-
-  # IMPORTANT: Don't overwrite secrets after they've been set
-  lifecycle {
-    ignore_changes = [secret_string]
-  }
+  secret_id     = aws_secretsmanager_secret.asgardeo[each.key].id
+  secret_string = var.asgardeo_secret_string
 }
 
 # =============================================================================

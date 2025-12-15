@@ -38,7 +38,8 @@ resource "aws_lb" "main" {
 # Uses 'instance' type for ASG attachment, 'ip' type for static IPs
 
 locals {
-  use_asg = var.worker_asg_name != ""
+  use_asg      = var.worker_asg_name != ""
+  enable_https = var.certificate_arn != ""
 }
 
 resource "aws_lb_target_group" "kong" {
@@ -99,10 +100,12 @@ resource "aws_lb_target_group_attachment" "workers" {
 }
 
 # ========================================
-# HTTPS LISTENER (Port 443)
+# HTTPS LISTENER (Port 443) - Optional
 # ========================================
 
 resource "aws_lb_listener" "https" {
+  count = local.enable_https ? 1 : 0
+  
   load_balancer_arn = aws_lb.main.arn
   port              = "443"
   protocol          = "HTTPS"
@@ -120,8 +123,9 @@ resource "aws_lb_listener" "https" {
 }
 
 # ========================================
-# HTTP LISTENER (Port 80 - Redirect to HTTPS)
+# HTTP LISTENER (Port 80)
 # ========================================
+# Redirects to HTTPS if certificate exists, otherwise forwards directly
 
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
@@ -129,17 +133,24 @@ resource "aws_lb_listener" "http" {
   protocol          = "HTTP"
 
   default_action {
-    type = "redirect"
+    type = local.enable_https ? "redirect" : "forward"
+    
+    # Forward to target group if no HTTPS
+    target_group_arn = local.enable_https ? null : aws_lb_target_group.kong.arn
 
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
+    # Redirect to HTTPS if certificate exists
+    dynamic "redirect" {
+      for_each = local.enable_https ? [1] : []
+      content {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
     }
   }
 
   tags = {
-    Name = "${var.project_name}-http-redirect"
+    Name = "${var.project_name}-http-listener"
   }
 }
 

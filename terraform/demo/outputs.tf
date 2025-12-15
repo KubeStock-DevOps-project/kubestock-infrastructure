@@ -238,54 +238,6 @@ output "cluster_info" {
 }
 
 # ========================================
-# ECR
-# ========================================
-
-output "ecr_role_arn" {
-  description = "ARN of the IAM role for GitHub Actions to access ECR"
-  value       = module.cicd.github_actions_role_arn
-}
-
-output "github_actions_role_name" {
-  description = "Name of the IAM role for GitHub Actions"
-  value       = module.cicd.github_actions_role_name
-}
-
-output "ecr_repository_urls" {
-  description = "ECR repository URLs for microservices"
-  value       = module.ecr.repository_urls
-}
-
-output "ecr_repository_arns" {
-  description = "ECR repository ARNs for microservices"
-  value       = module.ecr.repository_arns
-}
-
-output "ecr_pull_user_arn" {
-  description = "ARN of the IAM user for ECR pull access"
-  value       = module.ecr.ecr_pull_user_arn
-}
-
-output "ecr_credentials_secret_arn" {
-  description = "ARN of the Secrets Manager secret containing ECR credentials"
-  value       = module.ecr.ecr_credentials_secret_arn
-}
-
-# ========================================
-# LAMBDA
-# ========================================
-
-output "token_refresh_lambda_arn" {
-  description = "ARN of the token refresh Lambda function"
-  value       = module.lambda.lambda_function_arn
-}
-
-output "token_refresh_lambda_name" {
-  description = "Name of the token refresh Lambda function"
-  value       = module.lambda.lambda_function_name
-}
-
-# ========================================
 # RDS DATABASES
 # ========================================
 
@@ -421,44 +373,13 @@ output "route53_alias_record" {
 }
 
 # ========================================
-# DNS SETUP (for Namecheap/External Registrar)
+# DNS SETUP - DISABLED FOR DEMO
 # ========================================
+# Using ALB public DNS instead of custom domain
 
-output "hosted_zone_id" {
-  description = "Route 53 Hosted Zone ID"
-  value       = module.dns.hosted_zone_id
-}
-
-output "hosted_zone_nameservers" {
-  description = "NS records to configure at your domain registrar (Namecheap)"
-  value       = module.dns.hosted_zone_name_servers
-}
-
-output "dns_setup_instructions" {
-  description = "Instructions for configuring DNS at external registrar"
-  value       = <<-EOT
-    =====================================================
-    DNS CONFIGURATION FOR NAMECHEAP (or other registrar)
-    =====================================================
-    
-    1. Log into your Namecheap account
-    2. Go to Domain List → Manage → Domain
-    3. Under "Nameservers", select "Custom DNS"
-    4. Enter these nameservers (copy exactly):
-       ${join("\n       ", module.dns.hosted_zone_name_servers)}
-    
-    5. Wait for propagation (usually 30 mins, can take up to 48 hours)
-    6. Verify with: dig +short NS ${var.domain_name}
-    
-    After DNS propagates, your app will be accessible at:
-    https://${var.domain_name}
-    =====================================================
-  EOT
-}
-
-output "certificate_status" {
-  description = "Status of the ACM certificate (should be ISSUED)"
-  value       = module.dns.certificate_status
+output "app_url" {
+  description = "Application URL (ALB DNS)"
+  value       = "http://${module.alb.alb_dns_name}"
 }
 
 # ========================================

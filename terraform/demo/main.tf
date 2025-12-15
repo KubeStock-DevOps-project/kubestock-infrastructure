@@ -187,21 +187,6 @@ module "cicd" {
 }
 
 # ========================================
-# LAMBDA MODULE (Token Refresh)
-# ========================================
-
-module "lambda" {
-  source = "./modules/lambda"
-
-  project_name           = local.project_name_lower
-  aws_region             = data.aws_region.current.name
-  aws_account_id         = data.aws_caller_identity.current.account_id
-  log_level              = "INFO"
-  log_retention_days     = 14
-  refresh_interval_hours = 12
-}
-
-# ========================================
 # RDS MODULE (PostgreSQL Databases)
 # ========================================
 
@@ -230,9 +215,8 @@ module "rds" {
 # ========================================
 # SECRETS MANAGER MODULE
 # ========================================
-# Creates all secrets with initial/placeholder values.
-# Actual secret values are managed via AWS Console.
-# Terraform uses lifecycle { ignore_changes } to prevent overwriting.
+# Creates secrets using values from terraform.tfvars
+# Fetch production secrets using: aws secretsmanager get-secret-value
 
 module "secrets" {
   source = "./modules/secrets"
@@ -242,7 +226,7 @@ module "secrets" {
   aws_region     = data.aws_region.current.name
   aws_account_id = data.aws_caller_identity.current.account_id
 
-  # Database configuration - hosts/names from RDS, password from generated
+  # Database configuration
   db_hosts = {
     production = module.rds.prod_db_address
     staging    = module.rds.staging_db_address
@@ -254,31 +238,34 @@ module "secrets" {
   db_username = var.db_username
   db_password = random_password.db.result
 
-  # Security configuration - initial values (update via AWS Console)
+  # Security configuration
   my_ip                  = var.my_ip
   ssh_public_key_content = var.ssh_public_key_content
+  
+  # Asgardeo secret from production (complete JSON string)
+  asgardeo_secret_string = var.asgardeo_secret_string
 }
 
 # ========================================
-# DNS + ACM MODULE (Route 53 & SSL Certificate)
+# DNS + ACM MODULE - DISABLED FOR DEMO
 # ========================================
-# Creates hosted zone and certificate only
-# A record is created separately after ALB
+# Using ALB public DNS instead of custom domain
+# No certificate needed - HTTP only for demo
 
-module "dns" {
-  source = "./modules/dns"
-
-  project_name       = local.project_name_lower
-  domain_name        = var.domain_name
-  create_hosted_zone = var.create_hosted_zone
-  hosted_zone_id     = var.hosted_zone_id
-  alb_dns_name       = "" # A record created separately below
-  alb_zone_id        = ""
-  environment        = var.environment
-}
+# module "dns" {
+#   source = "./modules/dns"
+#
+#   project_name       = local.project_name_lower
+#   domain_name        = var.domain_name
+#   create_hosted_zone = var.create_hosted_zone
+#   hosted_zone_id     = var.hosted_zone_id
+#   alb_dns_name       = ""
+#   alb_zone_id        = ""
+#   environment        = var.environment
+# }
 
 # ========================================
-# ALB MODULE (Production Traffic)
+# ALB MODULE (Demo Traffic - HTTP Only)
 # ========================================
 
 module "alb" {
@@ -289,8 +276,8 @@ module "alb" {
   vpc_id             = module.networking.vpc_id
   public_subnet_ids  = module.networking.public_subnet_ids
   private_subnet_ids = module.networking.private_subnet_ids
-  domain_name        = var.domain_name
-  certificate_arn    = module.dns.validated_certificate_arn
+  domain_name        = "demo.local" # Placeholder - using ALB DNS
+  certificate_arn    = "" # No HTTPS for demo
   worker_node_port   = 30080 # Istio IngressGateway NodePort
 
   # Using static IPs for demo (no ASG)
@@ -300,34 +287,35 @@ module "alb" {
   worker_node_ips = var.worker_private_ips
 
   health_check_path     = "/api/gateway/health"
-  enable_waf            = var.enable_waf
+  enable_waf            = false # Disabled for demo
   waf_rate_limit        = var.waf_rate_limit
   alb_security_group_id = module.security.alb_sg_id
 }
 
 # ========================================
-# ROUTE 53 A RECORD (Points domain to ALB)
+# ROUTE 53 A RECORD - DISABLED FOR DEMO
 # ========================================
+# Using ALB public DNS directly, no custom domain needed
 
-resource "aws_route53_record" "app" {
-  zone_id = module.dns.hosted_zone_id
-  name    = var.domain_name
-  type    = "A"
-
-  alias {
-    name                   = module.alb.alb_dns_name
-    zone_id                = module.alb.alb_zone_id
-    evaluate_target_health = true
-  }
-}
-
-resource "aws_route53_record" "www" {
-  zone_id = module.dns.hosted_zone_id
-  name    = "www.${var.domain_name}"
-  type    = "CNAME"
-  ttl     = 300
-  records = [var.domain_name]
-}
+# resource "aws_route53_record" "app" {
+#   zone_id = module.dns.hosted_zone_id
+#   name    = var.domain_name
+#   type    = "A"
+#
+#   alias {
+#     name                   = module.alb.alb_dns_name
+#     zone_id                = module.alb.alb_zone_id
+#     evaluate_target_health = true
+#   }
+# }
+#
+# resource "aws_route53_record" "www" {
+#   zone_id = module.dns.hosted_zone_id
+#   name    = "www.${var.domain_name}"
+#   type    = "CNAME"
+#   ttl     = 300
+#   records = [var.domain_name]
+# }
 
 # ========================================
 # OBSERVABILITY MODULE (Prometheus, Loki, Grafana Storage)

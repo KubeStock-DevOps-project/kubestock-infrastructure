@@ -23,8 +23,8 @@ output "target_group_arn" {
 }
 
 output "https_listener_arn" {
-  description = "ARN of the HTTPS listener"
-  value       = aws_lb_listener.https.arn
+  description = "ARN of the HTTPS listener (null if HTTP-only)"
+  value       = length(aws_lb_listener.https) > 0 ? aws_lb_listener.https[0].arn : null
 }
 
 output "waf_web_acl_arn" {

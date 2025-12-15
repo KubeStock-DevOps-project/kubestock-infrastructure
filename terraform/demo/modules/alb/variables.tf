@@ -34,8 +34,9 @@ variable "domain_name" {
 }
 
 variable "certificate_arn" {
-  description = "ARN of the ACM certificate for HTTPS"
+  description = "ARN of the ACM certificate for HTTPS (optional, leave empty for HTTP-only)"
   type        = string
+  default     = ""
 }
 
 variable "worker_node_port" {
