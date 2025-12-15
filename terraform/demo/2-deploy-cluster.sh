@@ -38,7 +38,7 @@ chmod 600 "$SSH_KEY"
 echo ""
 echo "📦 Step 3/7: Installing Python dependencies..."
 sudo apt update
-sudo apt install -y python3-venv python3-pip
+sudo apt install -y python3-venv python3-pip jq
 
 # Create Python virtual environment
 echo ""
