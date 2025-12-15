@@ -18,6 +18,8 @@ echo "📋 Copying demo inventory..."
 cp -r ../kubespray-inventory-demo inventory/demo
 
 # Create Python virtual environment
+sudo apt install python3.10-venv -y
+
 echo "🐍 Setting up Python environment..."
 python3 -m venv venv
 source venv/bin/activate
