@@ -261,16 +261,6 @@ output "ecr_repository_arns" {
   value       = module.ecr.repository_arns
 }
 
-output "ecr_pull_user_arn" {
-  description = "ARN of the IAM user for ECR pull access"
-  value       = module.ecr.ecr_pull_user_arn
-}
-
-output "ecr_credentials_secret_arn" {
-  description = "ARN of the Secrets Manager secret containing ECR credentials"
-  value       = module.ecr.ecr_credentials_secret_arn
-}
-
 # ========================================
 # LAMBDA
 # ========================================
