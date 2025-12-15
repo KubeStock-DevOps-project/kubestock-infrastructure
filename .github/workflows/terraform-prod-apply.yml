@@ -46,19 +46,26 @@ jobs:
               working-directory: terraform/prod
               run: terraform validate
 
-            # Fetch secrets from AWS Secrets Manager and generate tfvars
-            - name: Generate terraform.tfvars from Secrets Manager
+            # Generate tfvars from config file + secrets from AWS Secrets Manager
+            - name: Generate terraform.tfvars
               working-directory: terraform/prod
               run: |
-                  # Fetch secrets
+                  # Start with the config file (non-secret values)
+                  cp terraform.tfvars.config terraform.tfvars
+                  
+                  # Fetch secrets from AWS Secrets Manager
                   SECURITY=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/security --query 'SecretString' --output text 2>/dev/null || echo '{}')
                   DATABASE=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/database --query 'SecretString' --output text 2>/dev/null || echo '{}')
                   ASGARDEO=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/asgardeo --query 'SecretString' --output text 2>/dev/null || echo '{}')
                   SLACK=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/alertmanager_slack --query 'SecretString' --output text 2>/dev/null || echo '{}')
                   TEST_RUNNER=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/test_runner --query 'SecretString' --output text 2>/dev/null || echo '{}')
                   
-                  # Generate tfvars
-                  cat > terraform.tfvars <<EOF
+                  # Append secrets to tfvars
+                  cat >> terraform.tfvars <<EOF
+
+                  # =============================================================================
+                  # SECRETS (from AWS Secrets Manager)
+                  # =============================================================================
                   my_ip = "$(echo "$SECURITY" | jq -r '.my_ip')"
                   ssh_public_key_content = "$(echo "$SECURITY" | jq -r '.ssh_public_key_content')"
                   db_password = "$(echo "$DATABASE" | jq -r '.password')"
@@ -205,19 +212,26 @@ jobs:
                   name: deployment-plan
                   path: terraform/prod
 
-            # Fetch secrets from AWS Secrets Manager and generate tfvars
-            - name: Generate terraform.tfvars from Secrets Manager
+            # Generate tfvars from config file + secrets from AWS Secrets Manager
+            - name: Generate terraform.tfvars
               working-directory: terraform/prod
               run: |
-                  # Fetch secrets
+                  # Start with the config file (non-secret values)
+                  cp terraform.tfvars.config terraform.tfvars
+                  
+                  # Fetch secrets from AWS Secrets Manager
                   SECURITY=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/security --query 'SecretString' --output text 2>/dev/null || echo '{}')
                   DATABASE=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/database --query 'SecretString' --output text 2>/dev/null || echo '{}')
                   ASGARDEO=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/asgardeo --query 'SecretString' --output text 2>/dev/null || echo '{}')
                   SLACK=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/alertmanager_slack --query 'SecretString' --output text 2>/dev/null || echo '{}')
                   TEST_RUNNER=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/test_runner --query 'SecretString' --output text 2>/dev/null || echo '{}')
                   
-                  # Generate tfvars
-                  cat > terraform.tfvars <<EOF
+                  # Append secrets to tfvars
+                  cat >> terraform.tfvars <<EOF
+
+                  # =============================================================================
+                  # SECRETS (from AWS Secrets Manager)
+                  # =============================================================================
                   my_ip = "$(echo "$SECURITY" | jq -r '.my_ip')"
                   ssh_public_key_content = "$(echo "$SECURITY" | jq -r '.ssh_public_key_content')"
                   db_password = "$(echo "$DATABASE" | jq -r '.password')"
