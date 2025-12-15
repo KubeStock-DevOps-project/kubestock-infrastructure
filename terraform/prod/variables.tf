@@ -71,14 +71,14 @@ variable "private_subnet_cidrs" {
 variable "my_ip" {
   description = "Your IP address to allow SSH and API access (CIDR format, e.g., 1.2.3.4/32)"
   type        = string
-  default     = "0.0.0.0/0"  # Override via -var in CI/CD
+  default     = "0.0.0.0/0" # Override via -var in CI/CD
 }
 
 variable "ssh_public_key_content" {
   description = "Content of the SSH public key (not the file path)"
   type        = string
   sensitive   = true
-  default     = ""  # Override via -var in CI/CD
+  default     = "" # Override via -var in CI/CD
 }
 
 # ========================================
