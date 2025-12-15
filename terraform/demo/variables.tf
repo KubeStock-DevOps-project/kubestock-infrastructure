@@ -143,7 +143,7 @@ variable "worker_private_ips" {
   description = "Static private IP addresses for each worker node (must align with worker count and target subnets)"
   type        = list(string)
   # Worker 0,2 go to subnet[1]=10.100.11.0/24, Worker 1,3 go to subnet[2]=10.100.12.0/24
-  default     = ["10.100.11.30", "10.100.12.30", "10.100.11.31", "10.100.12.31"]
+  default = ["10.100.11.30", "10.100.12.30", "10.100.11.31", "10.100.12.31"]
 }
 
 # ========================================
@@ -281,13 +281,55 @@ variable "observability_metrics_retention_days" {
 }
 
 # ========================================
-# ASGARDEO SECRETS
+# ASGARDEO CONFIGURATION
 # ========================================
-# Fetch from production using:
-# aws secretsmanager get-secret-value --secret-id kubestock/production/asgardeo --query SecretString --output text
+variable "asgardeo" {
+  description = "Asgardeo OAuth configuration"
+  type = object({
+    org_name                 = string
+    base_url                 = string
+    scim2_url                = string
+    token_url                = string
+    jwks_url                 = string
+    issuer                   = string
+    spa_client_id            = string
+    m2m_client_id            = string
+    m2m_client_secret        = string
+    group_id_admin           = string
+    group_id_supplier        = string
+    group_id_warehouse_staff = string
+  })
+  sensitive = true
+}
 
-variable "asgardeo_secret_string" {
-  description = "Complete Asgardeo secret JSON from production"
-  type        = string
-  sensitive   = true
+# ========================================
+# TEST RUNNER CONFIGURATION
+# ========================================
+variable "test_runner" {
+  description = "Test runner OAuth client and user credentials"
+  type = object({
+    client_id     = string
+    client_secret = string
+    username      = string
+    password      = string
+  })
+  sensitive = true
+}
+
+# ========================================
+# ALERTMANAGER SLACK CONFIGURATION
+# ========================================
+variable "alertmanager_slack" {
+  description = "Slack webhook URLs for Alertmanager"
+  type = object({
+    default_url  = string
+    critical_url = string
+    warning_url  = string
+  })
+  sensitive = true
+  default = {
+    default_url  = "https://hooks.slack.com/services/PLACEHOLDER"
+    critical_url = "https://hooks.slack.com/services/PLACEHOLDER"
+    warning_url  = "https://hooks.slack.com/services/PLACEHOLDER"
+  }
 }

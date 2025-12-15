@@ -1,67 +1,88 @@
-# ========================================
+# =============================================================================
 # TERRAFORM VARIABLES - KUBESTOCK DEMO
-# ========================================
+# =============================================================================
 # Copy this file to terraform.tfvars and fill in your values
+# Fetch secrets from production:
+#   aws secretsmanager get-secret-value --secret-id kubestock/production/asgardeo --query SecretString --output text --region ap-south-1
+#   aws secretsmanager get-secret-value --secret-id kubestock/shared/test-runner --query SecretString --output text --region ap-south-1
+#   aws secretsmanager get-secret-value --secret-id kubestock/production/alertmanager/slack --query SecretString --output text --region ap-south-1
+# =============================================================================
 
-# ========================================
+
+# =============================================================================
 # SECURITY - REQUIRED
-# ========================================
-# Your public IP address for SSH and API access
-my_ip = "YOUR_IP_ADDRESS/32"  # Example: "203.0.113.10/32"
+# =============================================================================
+my_ip                  = "YOUR_IP_ADDRESS/32"  # Example: "203.0.113.10/32" or "0.0.0.0/0" for demo
+ssh_public_key_content = "ssh-ed25519 AAAA... your-email@example.com"
 
-# Your SSH public key content (the entire content of your ~/.ssh/id_rsa.pub file)
-ssh_public_key_content = "ssh-rsa AAAAB3NzaC1... your-email@example.com"
 
-# ========================================
-# ASGARDEO SECRETS - REQUIRED
-# ========================================
-# Fetch from production:
-# aws secretsmanager get-secret-value --secret-id kubestock/production/asgardeo --query SecretString --output text
-
-asgardeo_secret_string = <<-EOT
-{
-  "ASGARDEO_ORG_NAME": "your-org",
-  "ASGARDEO_BASE_URL": "https://api.asgardeo.io/t/your-org",
-  "ASGARDEO_SCIM2_URL": "https://api.asgardeo.io/t/your-org/scim2",
-  "ASGARDEO_TOKEN_URL": "https://api.asgardeo.io/t/your-org/oauth2/token",
-  "ASGARDEO_JWKS_URL": "https://api.asgardeo.io/t/your-org/oauth2/jwks",
-  "ASGARDEO_ISSUER": "https://api.asgardeo.io/t/your-org/oauth2/token",
-  "ASGARDEO_SPA_CLIENT_ID": "your-spa-client-id",
-  "ASGARDEO_M2M_CLIENT_ID": "your-m2m-client-id",
-  "ASGARDEO_M2M_CLIENT_SECRET": "your-m2m-secret",
-  "ASGARDEO_GROUP_ID_ADMIN": "your-admin-group-id",
-  "ASGARDEO_GROUP_ID_SUPPLIER": "your-supplier-group-id",
-  "ASGARDEO_GROUP_ID_WAREHOUSE_STAFF": "your-warehouse-staff-group-id"
+# =============================================================================
+# ASGARDEO CONFIGURATION - REQUIRED
+# =============================================================================
+asgardeo = {
+  org_name                 = "your-org"
+  base_url                 = "https://api.asgardeo.io/t/your-org"
+  scim2_url                = "https://api.asgardeo.io/t/your-org/scim2"
+  token_url                = "https://api.asgardeo.io/t/your-org/oauth2/token"
+  jwks_url                 = "https://api.asgardeo.io/t/your-org/oauth2/jwks"
+  issuer                   = "https://api.asgardeo.io/t/your-org/oauth2/token"
+  spa_client_id            = "your-spa-client-id"
+  m2m_client_id            = "your-m2m-client-id"
+  m2m_client_secret        = "your-m2m-secret"
+  group_id_admin           = "your-admin-group-id"
+  group_id_supplier        = "your-supplier-group-id"
+  group_id_warehouse_staff = "your-warehouse-staff-group-id"
 }
-EOT
 
-# ========================================
+
+# =============================================================================
+# TEST RUNNER CONFIGURATION - REQUIRED
+# =============================================================================
+test_runner = {
+  client_id     = "your-test-runner-client-id"
+  client_secret = "your-test-runner-client-secret"
+  username      = "test_runner@example.com"
+  password      = "your-test-runner-password"
+}
+
+
+# =============================================================================
+# ALERTMANAGER SLACK WEBHOOKS - OPTIONAL
+# =============================================================================
+# alertmanager_slack = {
+#   default_url  = "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+#   critical_url = "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+#   warning_url  = "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+# }
+
+
+# =============================================================================
 # OPTIONAL OVERRIDES
-# ========================================
+# =============================================================================
 # Uncomment and modify these if you want to override defaults
 
-# aws_region = "ap-south-1"
+# aws_region   = "ap-south-1"
 # project_name = "KubeStock-Demo"
-# environment = "demo"
+# environment  = "demo"
 
-# VPC Configuration (Demo uses 10.100.0.0/16 to avoid conflicts)
-# vpc_cidr = "10.100.0.0/16"
-# public_subnet_cidrs = ["10.100.1.0/24", "10.100.2.0/24", "10.100.3.0/24"]
+# VPC Configuration (Demo uses 10.100.0.0/16 to avoid conflicts with prod)
+# vpc_cidr             = "10.100.0.0/16"
+# public_subnet_cidrs  = ["10.100.1.0/24", "10.100.2.0/24", "10.100.3.0/24"]
 # private_subnet_cidrs = ["10.100.10.0/24", "10.100.11.0/24", "10.100.12.0/24"]
 
 # Control Plane
 # control_plane_instance_type = "t3.medium"
-# control_plane_private_ip = "10.100.10.21"
+# control_plane_private_ip    = "10.100.10.21"
 
 # Workers (4 static workers for demo)
 # worker_instance_type = "t3.medium"
-# worker_volume_size = 25
-# worker_private_ips = ["10.100.10.30", "10.100.10.31", "10.100.11.30", "10.100.11.31"]
+# worker_volume_size   = 25
+# worker_private_ips   = ["10.100.11.30", "10.100.12.30", "10.100.11.31", "10.100.12.31"]
 
 # Database
-# db_username = "kubestock_admin"
-# prod_db_instance_class = "db.t4g.medium"
-# prod_db_multi_az = false
+# db_username             = "kubestock_admin"
+# prod_db_instance_class  = "db.t4g.medium"
+# prod_db_multi_az        = false
 # staging_db_instance_class = "db.t4g.small"
 
 # GitHub Organization

@@ -215,7 +215,7 @@ module "rds" {
 # SECRETS MANAGER MODULE
 # ========================================
 # Creates secrets using values from terraform.tfvars
-# Fetch production secrets using: aws secretsmanager get-secret-value
+# All secrets are populated directly - no manual AWS Console updates needed
 
 module "secrets" {
   source = "./modules/secrets"
@@ -228,7 +228,7 @@ module "secrets" {
   # Demo: No recovery window - delete secrets immediately
   recovery_window_in_days = 0
 
-  # Database configuration
+  # Database configuration (runtime generated)
   db_hosts = {
     production = module.rds.prod_db_address
     staging    = module.rds.staging_db_address
@@ -243,9 +243,15 @@ module "secrets" {
   # Security configuration
   my_ip                  = var.my_ip
   ssh_public_key_content = var.ssh_public_key_content
-  
-  # Asgardeo secret from production (complete JSON string)
-  asgardeo_secret_string = var.asgardeo_secret_string
+
+  # Asgardeo configuration (from terraform.tfvars)
+  asgardeo = var.asgardeo
+
+  # Test runner configuration (from terraform.tfvars)
+  test_runner = var.test_runner
+
+  # Alertmanager Slack webhooks (from terraform.tfvars)
+  alertmanager_slack = var.alertmanager_slack
 }
 
 # ========================================
@@ -279,8 +285,8 @@ module "alb" {
   public_subnet_ids  = module.networking.public_subnet_ids
   private_subnet_ids = module.networking.private_subnet_ids
   domain_name        = "demo.local" # Placeholder - using ALB DNS
-  certificate_arn    = "" # No HTTPS for demo
-  worker_node_port   = 30080 # Istio IngressGateway NodePort
+  certificate_arn    = ""           # No HTTPS for demo
+  worker_node_port   = 30080        # Istio IngressGateway NodePort
 
   # Using static IPs for demo (no ASG)
   worker_asg_name = ""

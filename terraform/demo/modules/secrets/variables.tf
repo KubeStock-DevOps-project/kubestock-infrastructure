@@ -1,8 +1,8 @@
 # =============================================================================
-# SECRETS MODULE VARIABLES - SIMPLIFIED
+# SECRETS MODULE VARIABLES - DEMO VERSION
 # =============================================================================
-# Only requires infrastructure-derived values, no secret values passed in.
-# All secrets are managed via AWS Secrets Manager UI after initial creation.
+# For demo, all secret values are passed in via terraform.tfvars.
+# This allows quick deployment without manual AWS Console updates.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -37,9 +37,9 @@ variable "kms_key_id" {
 }
 
 variable "recovery_window_in_days" {
-  description = "Number of days to recover a secret after deletion"
+  description = "Number of days to recover a secret after deletion (0 for demo)"
   type        = number
-  default     = 7
+  default     = 0
 }
 
 variable "tags" {
@@ -49,7 +49,7 @@ variable "tags" {
 }
 
 # -----------------------------------------------------------------------------
-# Database Configuration (Infrastructure-derived, not secrets)
+# Database Configuration (Generated at runtime by RDS module)
 # -----------------------------------------------------------------------------
 variable "db_hosts" {
   description = "Database host endpoints per environment (from RDS module)"
@@ -73,8 +73,11 @@ variable "db_password" {
   sensitive   = true
 }
 
+# -----------------------------------------------------------------------------
+# Security Configuration
+# -----------------------------------------------------------------------------
 variable "my_ip" {
-  description = "Initial IP for security group rules (CIDR format)"
+  description = "IP for security group rules (CIDR format)"
   type        = string
   default     = "0.0.0.0/0"
 }
@@ -86,8 +89,56 @@ variable "ssh_public_key_content" {
   default     = ""
 }
 
-variable "asgardeo_secret_string" {
-  description = "Complete Asgardeo secret JSON string from production"
-  type        = string
-  sensitive   = true
+# -----------------------------------------------------------------------------
+# Asgardeo Configuration (From terraform.tfvars)
+# -----------------------------------------------------------------------------
+variable "asgardeo" {
+  description = "Asgardeo OAuth configuration"
+  type = object({
+    org_name                 = string
+    base_url                 = string
+    scim2_url                = string
+    token_url                = string
+    jwks_url                 = string
+    issuer                   = string
+    spa_client_id            = string
+    m2m_client_id            = string
+    m2m_client_secret        = string
+    group_id_admin           = string
+    group_id_supplier        = string
+    group_id_warehouse_staff = string
+  })
+  sensitive = true
+}
+
+# -----------------------------------------------------------------------------
+# Test Runner Configuration (From terraform.tfvars)
+# -----------------------------------------------------------------------------
+variable "test_runner" {
+  description = "Test runner OAuth client and user credentials"
+  type = object({
+    client_id     = string
+    client_secret = string
+    username      = string
+    password      = string
+  })
+  sensitive = true
+}
+
+# -----------------------------------------------------------------------------
+# Alertmanager Slack Configuration (From terraform.tfvars)
+# -----------------------------------------------------------------------------
+variable "alertmanager_slack" {
+  description = "Slack webhook URLs for Alertmanager"
+  type = object({
+    default_url  = string
+    critical_url = string
+    warning_url  = string
+  })
+  sensitive = true
+  default = {
+    default_url  = "https://hooks.slack.com/services/PLACEHOLDER"
+    critical_url = "https://hooks.slack.com/services/PLACEHOLDER"
+    warning_url  = "https://hooks.slack.com/services/PLACEHOLDER"
+  }
 }

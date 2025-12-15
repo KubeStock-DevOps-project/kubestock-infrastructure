@@ -1,18 +1,16 @@
 # =============================================================================
-# SECRETS MANAGER MODULE - FULL AWS SECRETS MANAGER APPROACH
+# SECRETS MANAGER MODULE - DEMO VERSION
 # =============================================================================
-# All secrets are managed through AWS Secrets Manager.
-# Terraform creates secrets with initial/placeholder values.
-# Actual secret values are updated manually via AWS Console.
-# 
-# IMPORTANT: lifecycle { ignore_changes } ensures Terraform won't overwrite
-# secrets after they've been updated manually.
+# For demo, all secret values are passed in via terraform.tfvars.
+# No lifecycle ignore_changes - values come directly from tfvars.
+# This allows quick deployment without manual AWS Console updates.
 #
-# Workflow:
-# 1. Terraform creates secrets with generated/placeholder values
-# 2. Admin updates actual values via AWS Console
-# 3. Terraform ignores changes to secret_string values
-# 4. Applications read secrets from Secrets Manager at runtime
+# Secrets created:
+# - kubestock-demo/{env}/db - Database credentials (runtime generated)
+# - kubestock-demo/{env}/asgardeo - Asgardeo OAuth config
+# - kubestock-demo/production/alertmanager/slack - Slack webhooks
+# - kubestock-demo/shared/test-runner - Test runner credentials
+# - kubestock-demo/shared/security - SSH key and IP
 # =============================================================================
 
 locals {
@@ -48,11 +46,6 @@ resource "aws_secretsmanager_secret_version" "db" {
     DB_PASSWORD = var.db_password
     DB_NAME     = var.db_names[each.key]
   })
-
-  # IMPORTANT: Don't overwrite secrets after they've been set
-  lifecycle {
-    ignore_changes = [secret_string]
-  }
 }
 
 # =============================================================================
@@ -77,8 +70,21 @@ resource "aws_secretsmanager_secret" "asgardeo" {
 resource "aws_secretsmanager_secret_version" "asgardeo" {
   for_each = local.environments
 
-  secret_id     = aws_secretsmanager_secret.asgardeo[each.key].id
-  secret_string = var.asgardeo_secret_string
+  secret_id = aws_secretsmanager_secret.asgardeo[each.key].id
+  secret_string = jsonencode({
+    ASGARDEO_ORG_NAME                 = var.asgardeo.org_name
+    ASGARDEO_BASE_URL                 = var.asgardeo.base_url
+    ASGARDEO_SCIM2_URL                = var.asgardeo.scim2_url
+    ASGARDEO_TOKEN_URL                = var.asgardeo.token_url
+    ASGARDEO_JWKS_URL                 = var.asgardeo.jwks_url
+    ASGARDEO_ISSUER                   = var.asgardeo.issuer
+    ASGARDEO_SPA_CLIENT_ID            = var.asgardeo.spa_client_id
+    ASGARDEO_M2M_CLIENT_ID            = var.asgardeo.m2m_client_id
+    ASGARDEO_M2M_CLIENT_SECRET        = var.asgardeo.m2m_client_secret
+    ASGARDEO_GROUP_ID_ADMIN           = var.asgardeo.group_id_admin
+    ASGARDEO_GROUP_ID_SUPPLIER        = var.asgardeo.group_id_supplier
+    ASGARDEO_GROUP_ID_WAREHOUSE_STAFF = var.asgardeo.group_id_warehouse_staff
+  })
 }
 
 # =============================================================================
@@ -101,15 +107,10 @@ resource "aws_secretsmanager_secret" "alertmanager_slack" {
 resource "aws_secretsmanager_secret_version" "alertmanager_slack" {
   secret_id = aws_secretsmanager_secret.alertmanager_slack.id
   secret_string = jsonencode({
-    "default-url"  = "https://hooks.slack.com/services/PLACEHOLDER"
-    "critical-url" = "https://hooks.slack.com/services/PLACEHOLDER"
-    "warning-url"  = "https://hooks.slack.com/services/PLACEHOLDER"
+    "default-url"  = var.alertmanager_slack.default_url
+    "critical-url" = var.alertmanager_slack.critical_url
+    "warning-url"  = var.alertmanager_slack.warning_url
   })
-
-  # IMPORTANT: Don't overwrite secrets after they've been set
-  lifecycle {
-    ignore_changes = [secret_string]
-  }
 }
 
 # =============================================================================
@@ -132,16 +133,11 @@ resource "aws_secretsmanager_secret" "test_runner" {
 resource "aws_secretsmanager_secret_version" "test_runner" {
   secret_id = aws_secretsmanager_secret.test_runner.id
   secret_string = jsonencode({
-    client_id     = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
-    client_secret = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
-    username      = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
-    password      = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
+    client_id     = var.test_runner.client_id
+    client_secret = var.test_runner.client_secret
+    username      = var.test_runner.username
+    password      = var.test_runner.password
   })
-
-  # IMPORTANT: Don't overwrite secrets after they've been set
-  lifecycle {
-    ignore_changes = [secret_string]
-  }
 }
 
 # =============================================================================
@@ -167,11 +163,6 @@ resource "aws_secretsmanager_secret_version" "security" {
     my_ip                  = var.my_ip
     ssh_public_key_content = var.ssh_public_key_content
   })
-
-  # IMPORTANT: Don't overwrite secrets after they've been set
-  lifecycle {
-    ignore_changes = [secret_string]
-  }
 }
 
 # =============================================================================
