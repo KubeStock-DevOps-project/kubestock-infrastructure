@@ -32,7 +32,7 @@ pip install -r requirements.txt
 
 # Install Ansible collections
 echo "📚 Installing Ansible collections..."
-ansible-galaxy collection install -f galaxy.yml
+ansible-galaxy collection install ansible.utils community.crypto community.general ansible.netcommon ansible.posix community.docker kubernetes.core
 
 # Test Ansible connectivity
 echo "🔌 Testing connectivity to cluster nodes..."
