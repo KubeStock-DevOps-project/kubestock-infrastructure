@@ -189,6 +189,14 @@ variable "db_password" {
   sensitive   = true
 }
 
+
+variable "db_username" {
+  description = "Username for RDS usernames"
+  type        = string
+  sensitive   = false
+  default     = "kubestock_admin"
+}
+
 variable "prod_db_instance_class" {
   description = "Instance class for production database (db.t4g.medium: 2 vCPU, 4GB RAM for 5 microservices)"
   type        = string
@@ -269,4 +277,48 @@ variable "observability_metrics_retention_days" {
   description = "Number of days to retain metrics in S3 (Prometheus/Thanos)"
   type        = number
   default     = 365
+}
+
+# ========================================
+# SECRETS (From GitHub Secrets via terraform.tfvars)
+# ========================================
+
+variable "asgardeo_credentials" {
+  description = "Asgardeo OAuth configuration for each environment (production/staging)"
+  type = map(object({
+    org_name                 = string
+    base_url                 = string
+    scim2_url                = string
+    token_url                = string
+    jwks_url                 = string
+    issuer                   = string
+    spa_client_id            = string
+    m2m_client_id            = string
+    m2m_client_secret        = string
+    group_id_admin           = string
+    group_id_supplier        = string
+    group_id_warehouse_staff = string
+  }))
+  sensitive = true
+}
+
+variable "alertmanager_slack_webhooks" {
+  description = "Slack webhook URLs for Alertmanager (production only)"
+  type = object({
+    default_url  = string
+    critical_url = string
+    warning_url  = string
+  })
+  sensitive = true
+}
+
+variable "test_runner_credentials" {
+  description = "Test runner OAuth client and user credentials"
+  type = object({
+    client_id     = string
+    client_secret = string
+    username      = string
+    password      = string
+  })
+  sensitive = true
 }

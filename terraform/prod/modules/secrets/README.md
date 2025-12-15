@@ -1,30 +1,99 @@
-# Secrets Module
+# Secrets Manager Module
 
-Creates AWS Secrets Manager secrets for the KubeStock project.
+This module creates and populates all AWS Secrets Manager secrets for the KubeStock project.
 
-## Secrets Created
+## Architecture
 
-- `kubestock/{env}/db` - Database credentials (per environment)
-- `kubestock/{env}/asgardeo` - Asgardeo OAuth credentials (per environment)
-- `kubestock/{env}/alertmanager/slack` - Slack webhook URLs (per environment)
-- `kubestock/shared/test-user` - Test user credentials (shared)
-
-## Populate Secrets
-
-```bash
-# Test user (shared)
-aws secretsmanager put-secret-value \
-  --secret-id kubestock/shared/test-user \
-  --secret-string '{"username":"test_runner@yopmail.com","password":"Test_runner123"}' \
-  --region us-east-1
-
-# Database (per environment)
-aws secretsmanager put-secret-value \
-  --secret-id kubestock/staging/db \
-  --secret-string '{"username":"admin","password":"xxx","host":"db.example.com","port":"5432","database":"kubestock"}' \
-  --region us-east-1
+```
+GitHub Secrets → terraform.tfvars → Terraform → AWS Secrets Manager → External Secrets Operator → Kubernetes Secrets
 ```
 
-## Kubernetes Integration
+## Managed Secrets
 
-Deploy ExternalSecret: `kubectl apply -f k8s-externalsecret-test-user.yaml`
+| Secret Path | Environment | Description |
+|-------------|-------------|-------------|
+| `kubestock/production/db` | Production | Database credentials (from RDS) |
+| `kubestock/staging/db` | Staging | Database credentials (from RDS) |
+| `kubestock/production/asgardeo` | Production | Asgardeo OAuth configuration |
+| `kubestock/staging/asgardeo` | Staging | Asgardeo OAuth configuration |
+| `kubestock/production/alertmanager/slack` | Production | Slack webhook URLs |
+| `kubestock/shared/test-runner` | Shared | Test runner OAuth credentials |
+
+## IAM User
+
+This module creates an IAM user `kubestock-external-secrets` for the External Secrets Operator with:
+- Read-only access to `kubestock/*` secrets
+- ECR authorization token generation
+- ECR image pull access for `kubestock/*` repositories
+
+## Usage
+
+```hcl
+module "secrets" {
+  source = "./modules/secrets"
+
+  project_name   = "kubestock"
+  environments   = ["production", "staging"]
+  aws_region     = "ap-south-1"
+  aws_account_id = "123456789012"
+
+  # Database credentials - host/name from RDS module
+  db_credentials = {
+    production = {
+      host     = module.rds.prod_db_address
+      user     = "kubestock"
+      password = var.db_password
+      name     = module.rds.prod_db_name
+    }
+    staging = {
+      host     = module.rds.staging_db_address
+      user     = "kubestock"
+      password = var.db_password
+      name     = module.rds.staging_db_name
+    }
+  }
+
+  asgardeo_credentials        = var.asgardeo_credentials
+  alertmanager_slack_webhooks = var.alertmanager_slack_webhooks
+  test_runner_credentials     = var.test_runner_credentials
+}
+```
+
+## Bootstrap Procedure
+
+After running `terraform apply`:
+
+1. Create access key for the ESO IAM user:
+   ```bash
+   aws iam create-access-key --user-name kubestock-external-secrets
+   ```
+
+2. Create Kubernetes secret:
+   ```bash
+   kubectl create secret generic aws-external-secrets-creds \
+     --from-literal=access-key-id=AKIAXXXXXXXX \
+     --from-literal=secret-access-key=XXXXXXXX \
+     --namespace=external-secrets
+   ```
+
+3. Apply ClusterSecretStore:
+   ```bash
+   kubectl apply -f gitops/base/external-secrets/cluster-secret-store.yaml
+   ```
+
+4. Verify:
+   ```bash
+   kubectl get clustersecretstore aws-secretsmanager
+   kubectl get externalsecrets -A
+   ```
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `db_secret_arns` | Map of environment to database secret ARNs |
+| `asgardeo_secret_arns` | Map of environment to Asgardeo secret ARNs |
+| `alertmanager_slack_secret_arn` | ARN of production Alertmanager Slack secret |
+| `test_runner_secret_arn` | ARN of shared test runner secret |
+| `external_secrets_user_arn` | ARN of the ESO IAM user |
+| `external_secrets_user_name` | Name of the ESO IAM user |

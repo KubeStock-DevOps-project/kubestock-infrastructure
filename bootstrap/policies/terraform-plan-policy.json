@@ -1,0 +1,107 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllServicesReadOnly",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:Describe*",
+                "ec2:Get*",
+                "ec2:List*",
+                "elasticloadbalancing:Describe*",
+                "elasticloadbalancing:Get*",
+                "autoscaling:Describe*",
+                "ecr:Describe*",
+                "ecr:Get*",
+                "ecr:List*",
+                "lambda:List*",
+                "lambda:Get*",
+                "logs:Describe*",
+                "logs:Get*",
+                "logs:List*",
+                "events:Describe*",
+                "events:List*",
+                "s3:List*",
+                "s3:Get*",
+                "ssm:Describe*",
+                "ssm:Get*",
+                "ssm:List*",
+                "rds:Describe*",
+                "rds:List*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "Route53AndACMReadOnly",
+            "Effect": "Allow",
+            "Action": [
+                "route53:List*",
+                "route53:Get*",
+                "route53:Describe*",
+                "acm:List*",
+                "acm:Get*",
+                "acm:Describe*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "WAFv2ReadOnly",
+            "Effect": "Allow",
+            "Action": [
+                "wafv2:List*",
+                "wafv2:Get*",
+                "wafv2:Describe*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "IAMReadOnly",
+            "Effect": "Allow",
+            "Action": [
+                "iam:Get*",
+                "iam:List*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "SecretsManagerReadOnly",
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:DescribeSecret",
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:ListSecrets",
+                "secretsmanager:ListSecretVersionIds",
+                "secretsmanager:GetResourcePolicy"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "S3BackendAccess",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::kubestock-terraform-state",
+                "arn:aws:s3:::kubestock-terraform-state/*"
+            ]
+        },
+        {
+            "Sid": "ObservabilityS3ReadOnly",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::kubestock-prometheus-metrics-*",
+                "arn:aws:s3:::kubestock-prometheus-metrics-*/*",
+                "arn:aws:s3:::kubestock-loki-logs-*",
+                "arn:aws:s3:::kubestock-loki-logs-*/*",
+                "arn:aws:s3:::kubestock-grafana-backups-*",
+                "arn:aws:s3:::kubestock-grafana-backups-*/*"
+            ]
+        }
+    ]
+}

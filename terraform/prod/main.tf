@@ -195,6 +195,7 @@ module "rds" {
 
   # Database Credentials
   db_password = var.db_password
+  db_username = var.db_username
 
   # Production Database
   prod_instance_class      = var.prod_db_instance_class
@@ -213,9 +214,34 @@ module "secrets" {
   source = "./modules/secrets"
 
   project_name   = local.project_name_lower
-  environments   = ["staging", "production"]
+  environments   = ["production", "staging"]
   aws_region     = data.aws_region.current.name
   aws_account_id = data.aws_caller_identity.current.account_id
+
+  # Database credentials - host/name from RDS module, user/password from variable
+  db_credentials = {
+    production = {
+      host     = module.rds.prod_db_address
+      user     = var.db_username
+      password = var.db_password
+      name     = module.rds.prod_db_name
+    }
+    staging = {
+      host     = module.rds.staging_db_address
+      user     = var.db_username
+      password = var.db_password
+      name     = module.rds.staging_db_name
+    }
+  }
+
+  # Asgardeo credentials from GitHub Secrets via terraform.tfvars
+  asgardeo_credentials = var.asgardeo_credentials
+
+  # Alertmanager Slack webhooks (production only)
+  alertmanager_slack_webhooks = var.alertmanager_slack_webhooks
+
+  # Test runner credentials
+  test_runner_credentials = var.test_runner_credentials
 }
 
 # ========================================

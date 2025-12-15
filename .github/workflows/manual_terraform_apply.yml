@@ -3,6 +3,10 @@ name: Terraform Manual Deployment
 on:
   workflow_dispatch:
 
+env:
+  AWS_REGION: ap-south-1
+  SECRETS_PREFIX: kubestock/terraform
+
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -28,8 +32,8 @@ jobs:
       - name: Configure AWS Credentials (Plan Role)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: "arn:aws:iam::478468757808:role/KubeStock-Terraform-Plan-Role"
-          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
         working-directory: terraform/prod
@@ -39,13 +43,67 @@ jobs:
         working-directory: terraform/prod
         run: terraform validate
 
-      - name: Generate terraform.tfvars
+      # Fetch secrets from AWS Secrets Manager and generate tfvars
+      - name: Generate terraform.tfvars from Secrets Manager
         working-directory: terraform/prod
         run: |
+          # Fetch secrets
+          SECURITY=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/security --query 'SecretString' --output text 2>/dev/null || echo '{}')
+          DATABASE=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/database --query 'SecretString' --output text 2>/dev/null || echo '{}')
+          ASGARDEO=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/asgardeo --query 'SecretString' --output text 2>/dev/null || echo '{}')
+          SLACK=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/alertmanager_slack --query 'SecretString' --output text 2>/dev/null || echo '{}')
+          TEST_RUNNER=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/test_runner --query 'SecretString' --output text 2>/dev/null || echo '{}')
+          
+          # Generate tfvars
           cat > terraform.tfvars <<EOF
-          my_ip = "${{ secrets.MY_IP }}"
-          ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
-          db_password = "${{ secrets.DB_PASSWORD }}"
+          my_ip = "$(echo "$SECURITY" | jq -r '.my_ip')"
+          ssh_public_key_content = "$(echo "$SECURITY" | jq -r '.ssh_public_key_content')"
+          db_password = "$(echo "$DATABASE" | jq -r '.password')"
+          db_username = "$(echo "$DATABASE" | jq -r '.username // "kubestock_admin"')"
+          
+          asgardeo_credentials = {
+            production = {
+              org_name                 = "$(echo "$ASGARDEO" | jq -r '.production.org_name')"
+              base_url                 = "$(echo "$ASGARDEO" | jq -r '.production.base_url')"
+              scim2_url                = "$(echo "$ASGARDEO" | jq -r '.production.scim2_url')"
+              token_url                = "$(echo "$ASGARDEO" | jq -r '.production.token_url')"
+              jwks_url                 = "$(echo "$ASGARDEO" | jq -r '.production.jwks_url')"
+              issuer                   = "$(echo "$ASGARDEO" | jq -r '.production.issuer')"
+              spa_client_id            = "$(echo "$ASGARDEO" | jq -r '.production.spa_client_id')"
+              m2m_client_id            = "$(echo "$ASGARDEO" | jq -r '.production.m2m_client_id')"
+              m2m_client_secret        = "$(echo "$ASGARDEO" | jq -r '.production.m2m_client_secret')"
+              group_id_admin           = "$(echo "$ASGARDEO" | jq -r '.production.group_id_admin')"
+              group_id_supplier        = "$(echo "$ASGARDEO" | jq -r '.production.group_id_supplier')"
+              group_id_warehouse_staff = "$(echo "$ASGARDEO" | jq -r '.production.group_id_warehouse_staff')"
+            }
+            staging = {
+              org_name                 = "$(echo "$ASGARDEO" | jq -r '.staging.org_name')"
+              base_url                 = "$(echo "$ASGARDEO" | jq -r '.staging.base_url')"
+              scim2_url                = "$(echo "$ASGARDEO" | jq -r '.staging.scim2_url')"
+              token_url                = "$(echo "$ASGARDEO" | jq -r '.staging.token_url')"
+              jwks_url                 = "$(echo "$ASGARDEO" | jq -r '.staging.jwks_url')"
+              issuer                   = "$(echo "$ASGARDEO" | jq -r '.staging.issuer')"
+              spa_client_id            = "$(echo "$ASGARDEO" | jq -r '.staging.spa_client_id')"
+              m2m_client_id            = "$(echo "$ASGARDEO" | jq -r '.staging.m2m_client_id')"
+              m2m_client_secret        = "$(echo "$ASGARDEO" | jq -r '.staging.m2m_client_secret')"
+              group_id_admin           = "$(echo "$ASGARDEO" | jq -r '.staging.group_id_admin')"
+              group_id_supplier        = "$(echo "$ASGARDEO" | jq -r '.staging.group_id_supplier')"
+              group_id_warehouse_staff = "$(echo "$ASGARDEO" | jq -r '.staging.group_id_warehouse_staff')"
+            }
+          }
+          
+          alertmanager_slack_webhooks = {
+            default_url  = "$(echo "$SLACK" | jq -r '.default_url')"
+            critical_url = "$(echo "$SLACK" | jq -r '.critical_url')"
+            warning_url  = "$(echo "$SLACK" | jq -r '.warning_url')"
+          }
+          
+          test_runner_credentials = {
+            client_id     = "$(echo "$TEST_RUNNER" | jq -r '.client_id')"
+            client_secret = "$(echo "$TEST_RUNNER" | jq -r '.client_secret')"
+            username      = "$(echo "$TEST_RUNNER" | jq -r '.username')"
+            password      = "$(echo "$TEST_RUNNER" | jq -r '.password')"
+          }
           EOF
 
       - name: Terraform Plan and Save
@@ -66,7 +124,7 @@ jobs:
           name: plan-output
           path: terraform/prod/plan_output.txt
 
-      # ✅ PRINT FULL PLAN OUTPUT IN SUMMARY
+      # Print full plan output in summary
       - name: Publish Plan to Summary
         uses: actions/github-script@v7
         with:
@@ -98,7 +156,7 @@ jobs:
 
   apply:
     needs: plan
-    # 👇 This pauses execution & requires manual approval from GitHub Environment
+    # Pauses execution & requires manual approval from GitHub Environment
     environment: production
     runs-on: ubuntu-latest
     permissions:
@@ -117,8 +175,8 @@ jobs:
       - name: Configure AWS Credentials (Apply Role)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: "arn:aws:iam::478468757808:role/KubeStock-Terraform-Apply-Role"
-          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_APPLY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
         working-directory: terraform/prod
@@ -130,13 +188,67 @@ jobs:
           name: deployment-plan
           path: terraform/prod
 
-      - name: Regenerate terraform.tfvars
+      # Fetch secrets from AWS Secrets Manager and generate tfvars
+      - name: Generate terraform.tfvars from Secrets Manager
         working-directory: terraform/prod
         run: |
+          # Fetch secrets
+          SECURITY=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/security --query 'SecretString' --output text 2>/dev/null || echo '{}')
+          DATABASE=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/database --query 'SecretString' --output text 2>/dev/null || echo '{}')
+          ASGARDEO=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/asgardeo --query 'SecretString' --output text 2>/dev/null || echo '{}')
+          SLACK=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/alertmanager_slack --query 'SecretString' --output text 2>/dev/null || echo '{}')
+          TEST_RUNNER=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/test_runner --query 'SecretString' --output text 2>/dev/null || echo '{}')
+          
+          # Generate tfvars
           cat > terraform.tfvars <<EOF
-          my_ip = "${{ secrets.MY_IP }}"
-          ssh_public_key_content = "${{ secrets.SSH_PUBLIC_KEY_CONTENT }}"
-          db_password = "${{ secrets.DB_PASSWORD }}"
+          my_ip = "$(echo "$SECURITY" | jq -r '.my_ip')"
+          ssh_public_key_content = "$(echo "$SECURITY" | jq -r '.ssh_public_key_content')"
+          db_password = "$(echo "$DATABASE" | jq -r '.password')"
+          db_username = "$(echo "$DATABASE" | jq -r '.username // "kubestock_admin"')"
+          
+          asgardeo_credentials = {
+            production = {
+              org_name                 = "$(echo "$ASGARDEO" | jq -r '.production.org_name')"
+              base_url                 = "$(echo "$ASGARDEO" | jq -r '.production.base_url')"
+              scim2_url                = "$(echo "$ASGARDEO" | jq -r '.production.scim2_url')"
+              token_url                = "$(echo "$ASGARDEO" | jq -r '.production.token_url')"
+              jwks_url                 = "$(echo "$ASGARDEO" | jq -r '.production.jwks_url')"
+              issuer                   = "$(echo "$ASGARDEO" | jq -r '.production.issuer')"
+              spa_client_id            = "$(echo "$ASGARDEO" | jq -r '.production.spa_client_id')"
+              m2m_client_id            = "$(echo "$ASGARDEO" | jq -r '.production.m2m_client_id')"
+              m2m_client_secret        = "$(echo "$ASGARDEO" | jq -r '.production.m2m_client_secret')"
+              group_id_admin           = "$(echo "$ASGARDEO" | jq -r '.production.group_id_admin')"
+              group_id_supplier        = "$(echo "$ASGARDEO" | jq -r '.production.group_id_supplier')"
+              group_id_warehouse_staff = "$(echo "$ASGARDEO" | jq -r '.production.group_id_warehouse_staff')"
+            }
+            staging = {
+              org_name                 = "$(echo "$ASGARDEO" | jq -r '.staging.org_name')"
+              base_url                 = "$(echo "$ASGARDEO" | jq -r '.staging.base_url')"
+              scim2_url                = "$(echo "$ASGARDEO" | jq -r '.staging.scim2_url')"
+              token_url                = "$(echo "$ASGARDEO" | jq -r '.staging.token_url')"
+              jwks_url                 = "$(echo "$ASGARDEO" | jq -r '.staging.jwks_url')"
+              issuer                   = "$(echo "$ASGARDEO" | jq -r '.staging.issuer')"
+              spa_client_id            = "$(echo "$ASGARDEO" | jq -r '.staging.spa_client_id')"
+              m2m_client_id            = "$(echo "$ASGARDEO" | jq -r '.staging.m2m_client_id')"
+              m2m_client_secret        = "$(echo "$ASGARDEO" | jq -r '.staging.m2m_client_secret')"
+              group_id_admin           = "$(echo "$ASGARDEO" | jq -r '.staging.group_id_admin')"
+              group_id_supplier        = "$(echo "$ASGARDEO" | jq -r '.staging.group_id_supplier')"
+              group_id_warehouse_staff = "$(echo "$ASGARDEO" | jq -r '.staging.group_id_warehouse_staff')"
+            }
+          }
+          
+          alertmanager_slack_webhooks = {
+            default_url  = "$(echo "$SLACK" | jq -r '.default_url')"
+            critical_url = "$(echo "$SLACK" | jq -r '.critical_url')"
+            warning_url  = "$(echo "$SLACK" | jq -r '.warning_url')"
+          }
+          
+          test_runner_credentials = {
+            client_id     = "$(echo "$TEST_RUNNER" | jq -r '.client_id')"
+            client_secret = "$(echo "$TEST_RUNNER" | jq -r '.client_secret')"
+            username      = "$(echo "$TEST_RUNNER" | jq -r '.username')"
+            password      = "$(echo "$TEST_RUNNER" | jq -r '.password')"
+          }
           EOF
 
       - name: Terraform Apply

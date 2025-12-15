@@ -1,90 +1,165 @@
-# ========================================
-# TERRAFORM VARIABLES EXAMPLE
-# ========================================
-# Copy this file to terraform.tfvars and fill in your values
+# =============================================================================
+# KUBESTOCK - TERRAFORM VARIABLES (EXAMPLE)
+# =============================================================================
+# Copy this file to terraform.tfvars and fill in your actual values.
 # DO NOT commit terraform.tfvars to version control!
+#
+# In GitHub Actions, these values should come from repository secrets.
+# =============================================================================
 
-# ========================================
+
+# =============================================================================
 # AWS Configuration
-# ========================================
+# =============================================================================
 aws_region = "ap-south-1"
 
-# ========================================
-# SECURITY
-# ========================================
-# Your public IP address for SSH and K8s API access
-# Get it by running: curl -4 ifconfig.me
-my_ip = "1.2.3.4/32"
 
-# SSH public key content (not the file path)
-# Get it by running: cat ~/.ssh/kubestock-key.pub
-# Or use file() function: ssh_public_key_content = file("~/.ssh/kubestock-key.pub")
-ssh_public_key_content = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... your-key-here"
+# =============================================================================
+# Security (Required)
+# =============================================================================
+# Your public IP for SSH and Kubernetes API access
+# Get it using: curl -4 ifconfig.me
+my_ip = "203.0.113.0/32"
 
-# ========================================
-# RDS Database Credentials (REQUIRED)
-# ========================================
-# Master password for both production and staging databases
-# Use a strong password with at least 16 characters
+# SSH public key content (NOT file path)
+# Example:
+# ssh_public_key_content = file("~/.ssh/kubestock-key.pub")
+ssh_public_key_content = "ssh-ed25519 AAAA...your-key"
+
+
+# =============================================================================
+# Database Credentials (Required)
+# =============================================================================
+# Master password for both production and staging RDS databases
+# Minimum 16 characters recommended
 db_password = "CHANGE_ME_TO_A_STRONG_PASSWORD_16_CHARS_MIN"
+#db_username = "kubestock_admin"
 
-# ========================================
-# RDS Database Configuration (Optional - defaults provided)
-# ========================================
-# Production: db.t4g.medium (2 vCPU, 4GB RAM) - ~$52/month
-# Staging: db.t4g.small (2 vCPU, 2GB RAM) - ~$26/month
+
+# =============================================================================
+# RDS Configuration (Optional - Defaults Provided)
+# =============================================================================
+# Production: db.t4g.medium (~$52/month)
+# Staging:    db.t4g.small  (~$26/month)
 
 # prod_db_instance_class    = "db.t4g.medium"
 # staging_db_instance_class = "db.t4g.small"
 
-# Enable Multi-AZ for demo week (doubles prod cost to ~$105/month)
+# Enable Multi-AZ for production (doubles cost)
 # prod_db_multi_az = false
 
 # Enable deletion protection for production
 # prod_db_deletion_protection = false
 
-# ========================================
-# Networking (Optional - defaults provided)
-# ========================================
-# availability_zones     = ["ap-south-1a", "ap-south-1b", "ap-south-1c"]
-# primary_az             = "ap-south-1a"
-# vpc_cidr               = "10.0.0.0/16"
-# public_subnet_cidrs    = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-# private_subnet_cidrs   = ["10.0.10.0/24", "10.0.11.0/24", "10.0.12.0/24"]
 
-# ========================================
-# Compute (Optional - defaults provided)
-# ========================================
-# bastion_instance_type       = "t3.micro"
+# =============================================================================
+# Networking (Optional - Defaults Provided)
+# =============================================================================
+# availability_zones   = ["ap-south-1a", "ap-south-1b", "ap-south-1c"]
+# primary_az           = "ap-south-1a"
+# vpc_cidr             = "10.0.0.0/16"
+
+# public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+# private_subnet_cidrs = ["10.0.10.0/24", "10.0.11.0/24", "10.0.12.0/24"]
+
+
+# =============================================================================
+# Compute (Optional - Defaults Provided)
+# =============================================================================
+# bastion_instance_type        = "t3.micro"
 # control_plane_instance_type = "t3.medium"
 # worker_instance_type        = "t3.large"
 
 # control_plane_private_ip = "10.0.10.21"
 # worker_private_ips       = ["10.0.11.30", "10.0.12.30"]
 
-# ========================================
+
+# =============================================================================
 # DNS / SSL (Production HTTPS)
-# ========================================
-# Domain name for the production environment
+# =============================================================================
+# Domain name for production
 domain_name = "kubestock.dpiyumal.me"
 
-# Set to true to create a new Route 53 hosted zone
-# After creation, copy NS records to your domain registrar
+# Create Route53 hosted zone automatically
 create_hosted_zone = true
 
-# If you already have a hosted zone, set create_hosted_zone = false
-# and provide the existing zone ID
-# hosted_zone_id = "Z1234567890ABC"
+# If using an existing hosted zone:
+# create_hosted_zone = false
+# hosted_zone_id     = "Z1234567890ABC"
 
-# ========================================
+
+# =============================================================================
 # ALB / WAF (Production Traffic)
-# ========================================
-# Worker node private IPs for ALB target group
-# These IPs should match the worker nodes in the cluster
-worker_node_ips = ["10.0.11.68", "10.0.12.167"]
+# =============================================================================
+# Worker node private IPs used by ALB target group
+worker_node_ips = [
+  "10.0.11.68",
+  "10.0.12.167"
+]
 
-# Enable WAF for DDoS protection and rate limiting
+# Enable AWS WAF
 enable_waf = true
 
-# WAF rate limit (requests per 5 minutes from single IP)
+# WAF rate limit (requests per 5 minutes per IP)
 waf_rate_limit = 2000
+
+
+# =============================================================================
+# Asgardeo OAuth Credentials (Required)
+# =============================================================================
+asgardeo_credentials = {
+  production = {
+    org_name                 = "kubestock"
+    base_url                 = "https://api.asgardeo.io/t/kubestock"
+    scim2_url                = "https://api.asgardeo.io/t/kubestock/scim2"
+    token_url                = "https://api.asgardeo.io/t/kubestock/oauth2/token"
+    jwks_url                 = "https://api.asgardeo.io/t/kubestock/oauth2/jwks"
+    issuer                   = "https://api.asgardeo.io/t/kubestock/oauth2/token"
+
+    spa_client_id            = "your-spa-client-id"
+    m2m_client_id            = "your-m2m-client-id"
+    m2m_client_secret        = "your-m2m-client-secret"
+
+    group_id_admin           = "00000000-0000-0000-0000-000000000001"
+    group_id_supplier        = "00000000-0000-0000-0000-000000000002"
+    group_id_warehouse_staff = "00000000-0000-0000-0000-000000000003"
+  }
+
+  staging = {
+    org_name                 = "kubestock"
+    base_url                 = "https://api.asgardeo.io/t/kubestock"
+    scim2_url                = "https://api.asgardeo.io/t/kubestock/scim2"
+    token_url                = "https://api.asgardeo.io/t/kubestock/oauth2/token"
+    jwks_url                 = "https://api.asgardeo.io/t/kubestock/oauth2/jwks"
+    issuer                   = "https://api.asgardeo.io/t/kubestock/oauth2/token"
+
+    spa_client_id            = "your-spa-client-id"
+    m2m_client_id            = "your-m2m-client-id"
+    m2m_client_secret        = "your-m2m-client-secret"
+
+    group_id_admin           = "00000000-0000-0000-0000-000000000001"
+    group_id_supplier        = "00000000-0000-0000-0000-000000000002"
+    group_id_warehouse_staff = "00000000-0000-0000-0000-000000000003"
+  }
+}
+
+
+# =============================================================================
+# Alertmanager Slack Webhooks (Production Only)
+# =============================================================================
+alertmanager_slack_webhooks = {
+  default_url  = "https://hooks.slack.com/services/T00/B00/XXXX"
+  critical_url = "https://hooks.slack.com/services/T00/B00/YYYY"
+  warning_url  = "https://hooks.slack.com/services/T00/B00/ZZZZ"
+}
+
+
+# =============================================================================
+# Test Runner Credentials
+# =============================================================================
+test_runner_credentials = {
+  client_id     = "test-runner-client-id"
+  client_secret = "test-runner-client-secret"
+  username      = "testrunner@kubestock.io"
+  password      = "TestRunnerPassword123!"
+}

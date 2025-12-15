@@ -52,19 +52,19 @@
                 "arn:aws:s3:::kubestock-terraform-state/*"
             ]
         },
-           {
-               "Sid": "ObservabilityS3FullAccess",
-               "Effect": "Allow",
-               "Action": "s3:*",
-               "Resource": [
-                   "arn:aws:s3:::kubestock-prometheus-metrics-*",
-                   "arn:aws:s3:::kubestock-prometheus-metrics-*/*",
-                   "arn:aws:s3:::kubestock-loki-logs-*",
-                   "arn:aws:s3:::kubestock-loki-logs-*/*",
-                   "arn:aws:s3:::kubestock-grafana-backups-*",
-                   "arn:aws:s3:::kubestock-grafana-backups-*/*"
-               ]
-           },
+        {
+            "Sid": "ObservabilityS3FullAccess",
+            "Effect": "Allow",
+            "Action": "s3:*",
+            "Resource": [
+                "arn:aws:s3:::kubestock-prometheus-metrics-*",
+                "arn:aws:s3:::kubestock-prometheus-metrics-*/*",
+                "arn:aws:s3:::kubestock-loki-logs-*",
+                "arn:aws:s3:::kubestock-loki-logs-*/*",
+                "arn:aws:s3:::kubestock-grafana-backups-*",
+                "arn:aws:s3:::kubestock-grafana-backups-*/*"
+            ]
+        },
         {
             "Sid": "SSMParameterStore",
             "Effect": "Allow",
