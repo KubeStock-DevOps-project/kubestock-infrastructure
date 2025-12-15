@@ -225,6 +225,9 @@ module "secrets" {
   aws_region     = data.aws_region.current.name
   aws_account_id = data.aws_caller_identity.current.account_id
 
+  # Demo: No recovery window - delete secrets immediately
+  recovery_window_in_days = 0
+
   # Database configuration
   db_hosts = {
     production = module.rds.prod_db_address
