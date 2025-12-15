@@ -35,6 +35,14 @@ output "test_runner_secret_arn" {
 }
 
 # -----------------------------------------------------------------------------
+# Security Secret ARN
+# -----------------------------------------------------------------------------
+output "security_secret_arn" {
+  description = "ARN of the shared security secret (SSH key, my_ip)"
+  value       = aws_secretsmanager_secret.security.arn
+}
+
+# -----------------------------------------------------------------------------
 # External Secrets IAM User
 # -----------------------------------------------------------------------------
 output "external_secrets_user_arn" {

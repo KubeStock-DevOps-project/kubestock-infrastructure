@@ -1,5 +1,8 @@
 # =============================================================================
-# SECRETS MODULE VARIABLES
+# SECRETS MODULE VARIABLES - SIMPLIFIED
+# =============================================================================
+# Only requires infrastructure-derived values, no secret values passed in.
+# All secrets are managed via AWS Secrets Manager UI after initial creation.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -46,74 +49,42 @@ variable "tags" {
 }
 
 # -----------------------------------------------------------------------------
-# Database Credentials (Per Environment)
+# Database Configuration (Infrastructure-derived, not secrets)
 # -----------------------------------------------------------------------------
-variable "db_credentials" {
-  description = "Database credentials for each environment"
-  type = map(object({
-    host     = string
-    user     = string
-    password = string
-    name     = string
-  }))
-  sensitive = true
+variable "db_hosts" {
+  description = "Database host endpoints per environment (from RDS module)"
+  type        = map(string)
+}
 
-  validation {
-    condition     = alltrue([for env in ["production", "staging"] : contains(keys(var.db_credentials), env)])
-    error_message = "db_credentials must include both 'production' and 'staging' environments."
-  }
+variable "db_names" {
+  description = "Database names per environment (from RDS module)"
+  type        = map(string)
+}
+
+variable "db_username" {
+  description = "Database username (same for all environments)"
+  type        = string
+  default     = "kubestock_admin"
+}
+
+variable "db_password" {
+  description = "Database password (generated at root level)"
+  type        = string
+  sensitive   = true
 }
 
 # -----------------------------------------------------------------------------
-# Asgardeo OAuth Credentials (Per Environment)
+# Security Configuration (Initial values, updated via AWS Console)
 # -----------------------------------------------------------------------------
-variable "asgardeo_credentials" {
-  description = "Asgardeo OAuth configuration for each environment"
-  type = map(object({
-    org_name                 = string
-    base_url                 = string
-    scim2_url                = string
-    token_url                = string
-    jwks_url                 = string
-    issuer                   = string
-    spa_client_id            = string
-    m2m_client_id            = string
-    m2m_client_secret        = string
-    group_id_admin           = string
-    group_id_supplier        = string
-    group_id_warehouse_staff = string
-  }))
-  sensitive = true
-
-  validation {
-    condition     = alltrue([for env in ["production", "staging"] : contains(keys(var.asgardeo_credentials), env)])
-    error_message = "asgardeo_credentials must include both 'production' and 'staging' environments."
-  }
+variable "my_ip" {
+  description = "Initial IP for security group rules (CIDR format)"
+  type        = string
+  default     = "0.0.0.0/32"
 }
 
-# -----------------------------------------------------------------------------
-# Alertmanager Slack Webhooks (Production Only)
-# -----------------------------------------------------------------------------
-variable "alertmanager_slack_webhooks" {
-  description = "Slack webhook URLs for Alertmanager (production only)"
-  type = object({
-    default_url  = string
-    critical_url = string
-    warning_url  = string
-  })
-  sensitive = true
-}
-
-# -----------------------------------------------------------------------------
-# Test Runner Credentials (Shared)
-# -----------------------------------------------------------------------------
-variable "test_runner_credentials" {
-  description = "Test runner OAuth client and user credentials"
-  type = object({
-    client_id     = string
-    client_secret = string
-    username      = string
-    password      = string
-  })
-  sensitive = true
+variable "ssh_public_key_content" {
+  description = "Initial SSH public key content"
+  type        = string
+  default     = "ssh-rsa PLACEHOLDER"
+  sensitive   = true
 }

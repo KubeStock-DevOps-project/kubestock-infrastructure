@@ -1,16 +1,18 @@
 # =============================================================================
-# SECRETS MANAGER MODULE
+# SECRETS MANAGER MODULE - FULL AWS SECRETS MANAGER APPROACH
 # =============================================================================
-# Creates and populates all secrets in AWS Secrets Manager for KubeStock.
-# Database credentials are derived from RDS module outputs.
-# Other secrets are passed via Terraform variables (stored in GitHub Secrets).
+# All secrets are managed through AWS Secrets Manager.
+# Terraform creates secrets with initial/placeholder values.
+# Actual secret values are updated manually via AWS Console.
+# 
+# IMPORTANT: lifecycle { ignore_changes } ensures Terraform won't overwrite
+# secrets after they've been updated manually.
 #
-# This module manages:
-# - Database credentials (per environment) - derived from RDS
-# - Asgardeo OAuth configuration (per environment) - from tfvars
-# - Alertmanager Slack webhooks (production only) - from tfvars
-# - Test runner credentials (shared) - from tfvars
-# - IAM user for External Secrets Operator
+# Workflow:
+# 1. Terraform creates secrets with generated/placeholder values
+# 2. Admin updates actual values via AWS Console
+# 3. Terraform ignores changes to secret_string values
+# 4. Applications read secrets from Secrets Manager at runtime
 # =============================================================================
 
 locals {
@@ -20,7 +22,6 @@ locals {
 # =============================================================================
 # DATABASE SECRETS (Per Environment)
 # =============================================================================
-# These secrets combine RDS endpoint info with credentials from RDS module
 resource "aws_secretsmanager_secret" "db" {
   for_each = local.environments
 
@@ -42,11 +43,16 @@ resource "aws_secretsmanager_secret_version" "db" {
 
   secret_id = aws_secretsmanager_secret.db[each.key].id
   secret_string = jsonencode({
-    DB_HOST     = var.db_credentials[each.key].host
-    DB_USER     = var.db_credentials[each.key].user
-    DB_PASSWORD = var.db_credentials[each.key].password
-    DB_NAME     = var.db_credentials[each.key].name
+    DB_HOST     = var.db_hosts[each.key]
+    DB_USER     = var.db_username
+    DB_PASSWORD = var.db_password
+    DB_NAME     = var.db_names[each.key]
   })
+
+  # IMPORTANT: Don't overwrite secrets after they've been set
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 # =============================================================================
@@ -56,7 +62,7 @@ resource "aws_secretsmanager_secret" "asgardeo" {
   for_each = local.environments
 
   name                    = "${var.project_name}/${each.key}/asgardeo"
-  description             = "Asgardeo OAuth credentials for ${var.project_name} ${each.key}"
+  description             = "Asgardeo OAuth credentials for ${var.project_name} ${each.key} - UPDATE VIA AWS CONSOLE"
   kms_key_id              = var.kms_key_id
   recovery_window_in_days = var.recovery_window_in_days
 
@@ -73,19 +79,24 @@ resource "aws_secretsmanager_secret_version" "asgardeo" {
 
   secret_id = aws_secretsmanager_secret.asgardeo[each.key].id
   secret_string = jsonencode({
-    ASGARDEO_ORG_NAME                 = var.asgardeo_credentials[each.key].org_name
-    ASGARDEO_BASE_URL                 = var.asgardeo_credentials[each.key].base_url
-    ASGARDEO_SCIM2_URL                = var.asgardeo_credentials[each.key].scim2_url
-    ASGARDEO_TOKEN_URL                = var.asgardeo_credentials[each.key].token_url
-    ASGARDEO_JWKS_URL                 = var.asgardeo_credentials[each.key].jwks_url
-    ASGARDEO_ISSUER                   = var.asgardeo_credentials[each.key].issuer
-    ASGARDEO_SPA_CLIENT_ID            = var.asgardeo_credentials[each.key].spa_client_id
-    ASGARDEO_M2M_CLIENT_ID            = var.asgardeo_credentials[each.key].m2m_client_id
-    ASGARDEO_M2M_CLIENT_SECRET        = var.asgardeo_credentials[each.key].m2m_client_secret
-    ASGARDEO_GROUP_ID_ADMIN           = var.asgardeo_credentials[each.key].group_id_admin
-    ASGARDEO_GROUP_ID_SUPPLIER        = var.asgardeo_credentials[each.key].group_id_supplier
-    ASGARDEO_GROUP_ID_WAREHOUSE_STAFF = var.asgardeo_credentials[each.key].group_id_warehouse_staff
+    ASGARDEO_ORG_NAME                 = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
+    ASGARDEO_BASE_URL                 = "https://api.asgardeo.io/t/PLACEHOLDER"
+    ASGARDEO_SCIM2_URL                = "https://api.asgardeo.io/t/PLACEHOLDER/scim2"
+    ASGARDEO_TOKEN_URL                = "https://api.asgardeo.io/t/PLACEHOLDER/oauth2/token"
+    ASGARDEO_JWKS_URL                 = "https://api.asgardeo.io/t/PLACEHOLDER/oauth2/jwks"
+    ASGARDEO_ISSUER                   = "https://api.asgardeo.io/t/PLACEHOLDER/oauth2/token"
+    ASGARDEO_SPA_CLIENT_ID            = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
+    ASGARDEO_M2M_CLIENT_ID            = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
+    ASGARDEO_M2M_CLIENT_SECRET        = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
+    ASGARDEO_GROUP_ID_ADMIN           = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
+    ASGARDEO_GROUP_ID_SUPPLIER        = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
+    ASGARDEO_GROUP_ID_WAREHOUSE_STAFF = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
   })
+
+  # IMPORTANT: Don't overwrite secrets after they've been set
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 # =============================================================================
@@ -93,7 +104,7 @@ resource "aws_secretsmanager_secret_version" "asgardeo" {
 # =============================================================================
 resource "aws_secretsmanager_secret" "alertmanager_slack" {
   name                    = "${var.project_name}/production/alertmanager/slack"
-  description             = "Slack webhook URLs for Alertmanager in ${var.project_name} production"
+  description             = "Slack webhook URLs for Alertmanager - UPDATE VIA AWS CONSOLE"
   kms_key_id              = var.kms_key_id
   recovery_window_in_days = var.recovery_window_in_days
 
@@ -108,10 +119,15 @@ resource "aws_secretsmanager_secret" "alertmanager_slack" {
 resource "aws_secretsmanager_secret_version" "alertmanager_slack" {
   secret_id = aws_secretsmanager_secret.alertmanager_slack.id
   secret_string = jsonencode({
-    "default-url"  = var.alertmanager_slack_webhooks.default_url
-    "critical-url" = var.alertmanager_slack_webhooks.critical_url
-    "warning-url"  = var.alertmanager_slack_webhooks.warning_url
+    "default-url"  = "https://hooks.slack.com/services/PLACEHOLDER"
+    "critical-url" = "https://hooks.slack.com/services/PLACEHOLDER"
+    "warning-url"  = "https://hooks.slack.com/services/PLACEHOLDER"
   })
+
+  # IMPORTANT: Don't overwrite secrets after they've been set
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 # =============================================================================
@@ -119,7 +135,7 @@ resource "aws_secretsmanager_secret_version" "alertmanager_slack" {
 # =============================================================================
 resource "aws_secretsmanager_secret" "test_runner" {
   name                    = "${var.project_name}/shared/test-runner"
-  description             = "Test runner OAuth client and user credentials (shared across all environments)"
+  description             = "Test runner OAuth client and user credentials - UPDATE VIA AWS CONSOLE"
   kms_key_id              = var.kms_key_id
   recovery_window_in_days = var.recovery_window_in_days
 
@@ -134,11 +150,46 @@ resource "aws_secretsmanager_secret" "test_runner" {
 resource "aws_secretsmanager_secret_version" "test_runner" {
   secret_id = aws_secretsmanager_secret.test_runner.id
   secret_string = jsonencode({
-    client_id     = var.test_runner_credentials.client_id
-    client_secret = var.test_runner_credentials.client_secret
-    username      = var.test_runner_credentials.username
-    password      = var.test_runner_credentials.password
+    client_id     = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
+    client_secret = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
+    username      = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
+    password      = "PLACEHOLDER_UPDATE_VIA_AWS_CONSOLE"
   })
+
+  # IMPORTANT: Don't overwrite secrets after they've been set
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
+# =============================================================================
+# SECURITY SECRETS (SSH Key, My IP)
+# =============================================================================
+resource "aws_secretsmanager_secret" "security" {
+  name                    = "${var.project_name}/shared/security"
+  description             = "Security credentials (SSH key, allowed IPs) - UPDATE VIA AWS CONSOLE"
+  kms_key_id              = var.kms_key_id
+  recovery_window_in_days = var.recovery_window_in_days
+
+  tags = merge(var.tags, {
+    Project     = var.project_name
+    Environment = "shared"
+    SecretType  = "security"
+    ManagedBy   = "terraform"
+  })
+}
+
+resource "aws_secretsmanager_secret_version" "security" {
+  secret_id = aws_secretsmanager_secret.security.id
+  secret_string = jsonencode({
+    my_ip                  = var.my_ip
+    ssh_public_key_content = var.ssh_public_key_content
+  })
+
+  # IMPORTANT: Don't overwrite secrets after they've been set
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 # =============================================================================

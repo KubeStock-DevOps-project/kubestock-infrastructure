@@ -65,16 +65,20 @@ variable "private_subnet_cidrs" {
 # ========================================
 # SECURITY
 # ========================================
+# These are passed via GitHub Actions secrets (-var flag)
+# Set via repository secrets: MY_IP, SSH_PUBLIC_KEY_CONTENT
 
 variable "my_ip" {
   description = "Your IP address to allow SSH and API access (CIDR format, e.g., 1.2.3.4/32)"
   type        = string
+  default     = "0.0.0.0/0"  # Override via -var in CI/CD
 }
 
 variable "ssh_public_key_content" {
   description = "Content of the SSH public key (not the file path)"
   type        = string
   sensitive   = true
+  default     = ""  # Override via -var in CI/CD
 }
 
 # ========================================
@@ -183,12 +187,8 @@ variable "github_org" {
 # RDS DATABASES
 # ========================================
 
-variable "db_password" {
-  description = "Master password for RDS PostgreSQL databases"
-  type        = string
-  sensitive   = true
-}
-
+# NOTE: db_password is now generated automatically using random_password
+# and stored in AWS Secrets Manager. No need to pass it as a variable.
 
 variable "db_username" {
   description = "Username for RDS usernames"
@@ -277,48 +277,4 @@ variable "observability_metrics_retention_days" {
   description = "Number of days to retain metrics in S3 (Prometheus/Thanos)"
   type        = number
   default     = 365
-}
-
-# ========================================
-# SECRETS (From GitHub Secrets via terraform.tfvars)
-# ========================================
-
-variable "asgardeo_credentials" {
-  description = "Asgardeo OAuth configuration for each environment (production/staging)"
-  type = map(object({
-    org_name                 = string
-    base_url                 = string
-    scim2_url                = string
-    token_url                = string
-    jwks_url                 = string
-    issuer                   = string
-    spa_client_id            = string
-    m2m_client_id            = string
-    m2m_client_secret        = string
-    group_id_admin           = string
-    group_id_supplier        = string
-    group_id_warehouse_staff = string
-  }))
-  sensitive = true
-}
-
-variable "alertmanager_slack_webhooks" {
-  description = "Slack webhook URLs for Alertmanager (production only)"
-  type = object({
-    default_url  = string
-    critical_url = string
-    warning_url  = string
-  })
-  sensitive = true
-}
-
-variable "test_runner_credentials" {
-  description = "Test runner OAuth client and user credentials"
-  type = object({
-    client_id     = string
-    client_secret = string
-    username      = string
-    password      = string
-  })
-  sensitive = true
 }

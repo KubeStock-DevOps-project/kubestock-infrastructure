@@ -8,15 +8,12 @@ on:
 
 env:
     AWS_REGION: ap-south-1
-    SECRETS_PREFIX: kubestock/terraform
 
 jobs:
     plan:
         runs-on: ubuntu-latest
-        outputs:
-            plan_file: ${{ steps.plan.outputs.plan_file }}
         permissions:
-            id-token: write # Required for AWS OIDC
+            id-token: write
             contents: read
         steps:
             - name: Checkout
@@ -27,101 +24,33 @@ jobs:
               with:
                   terraform_version: "1.13.5"
 
-            - name: Terraform Format Check (prod)
+            - name: Terraform Format Check
               working-directory: terraform/prod
               run: terraform fmt -check
 
-            # Configure AWS Credentials via OIDC (Plan Role)
             - name: Configure AWS Credentials
               uses: aws-actions/configure-aws-credentials@v4
               with:
                   role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
                   aws-region: ${{ env.AWS_REGION }}
 
-            - name: Terraform Init (prod)
+            - name: Terraform Init
               working-directory: terraform/prod
               run: terraform init
 
-            - name: Terraform Validate (prod)
+            - name: Terraform Validate
               working-directory: terraform/prod
               run: terraform validate
 
-            # Generate tfvars from config file + secrets from AWS Secrets Manager
-            - name: Generate terraform.tfvars
-              working-directory: terraform/prod
-              run: |
-                  # Start with the config file (non-secret values)
-                  cp terraform.tfvars.config terraform.tfvars
-                  
-                  # Fetch secrets from AWS Secrets Manager
-                  SECURITY=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/security --query 'SecretString' --output text 2>/dev/null || echo '{}')
-                  DATABASE=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/database --query 'SecretString' --output text 2>/dev/null || echo '{}')
-                  ASGARDEO=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/asgardeo --query 'SecretString' --output text 2>/dev/null || echo '{}')
-                  SLACK=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/alertmanager_slack --query 'SecretString' --output text 2>/dev/null || echo '{}')
-                  TEST_RUNNER=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/test_runner --query 'SecretString' --output text 2>/dev/null || echo '{}')
-                  
-                  # Append secrets to tfvars
-                  cat >> terraform.tfvars <<EOF
-
-                  # =============================================================================
-                  # SECRETS (from AWS Secrets Manager)
-                  # =============================================================================
-                  my_ip = "$(echo "$SECURITY" | jq -r '.my_ip')"
-                  ssh_public_key_content = "$(echo "$SECURITY" | jq -r '.ssh_public_key_content')"
-                  db_password = "$(echo "$DATABASE" | jq -r '.password')"
-                  db_username = "$(echo "$DATABASE" | jq -r '.username // "kubestock_admin"')"
-                  
-                  asgardeo_credentials = {
-                    production = {
-                      org_name                 = "$(echo "$ASGARDEO" | jq -r '.production.org_name')"
-                      base_url                 = "$(echo "$ASGARDEO" | jq -r '.production.base_url')"
-                      scim2_url                = "$(echo "$ASGARDEO" | jq -r '.production.scim2_url')"
-                      token_url                = "$(echo "$ASGARDEO" | jq -r '.production.token_url')"
-                      jwks_url                 = "$(echo "$ASGARDEO" | jq -r '.production.jwks_url')"
-                      issuer                   = "$(echo "$ASGARDEO" | jq -r '.production.issuer')"
-                      spa_client_id            = "$(echo "$ASGARDEO" | jq -r '.production.spa_client_id')"
-                      m2m_client_id            = "$(echo "$ASGARDEO" | jq -r '.production.m2m_client_id')"
-                      m2m_client_secret        = "$(echo "$ASGARDEO" | jq -r '.production.m2m_client_secret')"
-                      group_id_admin           = "$(echo "$ASGARDEO" | jq -r '.production.group_id_admin')"
-                      group_id_supplier        = "$(echo "$ASGARDEO" | jq -r '.production.group_id_supplier')"
-                      group_id_warehouse_staff = "$(echo "$ASGARDEO" | jq -r '.production.group_id_warehouse_staff')"
-                    }
-                    staging = {
-                      org_name                 = "$(echo "$ASGARDEO" | jq -r '.staging.org_name')"
-                      base_url                 = "$(echo "$ASGARDEO" | jq -r '.staging.base_url')"
-                      scim2_url                = "$(echo "$ASGARDEO" | jq -r '.staging.scim2_url')"
-                      token_url                = "$(echo "$ASGARDEO" | jq -r '.staging.token_url')"
-                      jwks_url                 = "$(echo "$ASGARDEO" | jq -r '.staging.jwks_url')"
-                      issuer                   = "$(echo "$ASGARDEO" | jq -r '.staging.issuer')"
-                      spa_client_id            = "$(echo "$ASGARDEO" | jq -r '.staging.spa_client_id')"
-                      m2m_client_id            = "$(echo "$ASGARDEO" | jq -r '.staging.m2m_client_id')"
-                      m2m_client_secret        = "$(echo "$ASGARDEO" | jq -r '.staging.m2m_client_secret')"
-                      group_id_admin           = "$(echo "$ASGARDEO" | jq -r '.staging.group_id_admin')"
-                      group_id_supplier        = "$(echo "$ASGARDEO" | jq -r '.staging.group_id_supplier')"
-                      group_id_warehouse_staff = "$(echo "$ASGARDEO" | jq -r '.staging.group_id_warehouse_staff')"
-                    }
-                  }
-                  
-                  alertmanager_slack_webhooks = {
-                    default_url  = "$(echo "$SLACK" | jq -r '.default_url')"
-                    critical_url = "$(echo "$SLACK" | jq -r '.critical_url')"
-                    warning_url  = "$(echo "$SLACK" | jq -r '.warning_url')"
-                  }
-                  
-                  test_runner_credentials = {
-                    client_id     = "$(echo "$TEST_RUNNER" | jq -r '.client_id')"
-                    client_secret = "$(echo "$TEST_RUNNER" | jq -r '.client_secret')"
-                    username      = "$(echo "$TEST_RUNNER" | jq -r '.username')"
-                    password      = "$(echo "$TEST_RUNNER" | jq -r '.password')"
-                  }
-                  EOF
-
-            - name: Terraform Plan and Save
+            - name: Terraform Plan
               id: plan
               working-directory: terraform/prod
               run: |
                   set -o pipefail
-                  terraform plan -input=false -out=tfplan -no-color 2>&1 | tee plan_output.txt
+                  terraform plan -input=false -out=tfplan -no-color \
+                    -var="my_ip=${{ secrets.MY_IP }}" \
+                    -var="ssh_public_key_content=${{ secrets.SSH_PUBLIC_KEY_CONTENT }}" \
+                    2>&1 | tee plan_output.txt
 
             - name: Upload Plan Artifact
               if: success()
@@ -132,7 +61,7 @@ jobs:
                       terraform/prod/tfplan
                       terraform/prod/lambda/
 
-            - name: Upload Plan Output for Review
+            - name: Upload Plan Output
               if: always()
               uses: actions/upload-artifact@v4
               with:
@@ -163,22 +92,10 @@ jobs:
 
                       await core.summary
                         .addHeading(`${statusEmoji} Terraform Plan Results - ${statusText}`)
-                        .addRaw(planFailed ? 
-                          '⚠️ The plan encountered errors. Please review the output below.\n\n' :
-                          '✅ The plan completed successfully. Review the changes below.\n\n')
                         .addRaw('<details><summary>Click to expand full plan output</summary>\n\n')
                         .addCodeBlock(truncatedPlan, 'terraform')
                         .addRaw('\n</details>')
                         .write();
-
-            # Clean up sensitive files immediately after upload
-            - name: Clean up sensitive files
-              if: always()
-              working-directory: terraform/prod
-              run: |
-                  rm -f terraform.tfvars
-                  rm -f tfplan
-                  rm -f plan_output.txt
 
     apply:
         runs-on: ubuntu-latest
@@ -195,14 +112,13 @@ jobs:
               with:
                   terraform_version: "1.13.5"
 
-            # Configure AWS Credentials via OIDC (Apply Role)
             - name: Configure AWS Credentials
               uses: aws-actions/configure-aws-credentials@v4
               with:
                   role-to-assume: ${{ vars.AWS_APPLY_ROLE_ARN }}
                   aws-region: ${{ env.AWS_REGION }}
 
-            - name: Terraform Init (prod)
+            - name: Terraform Init
               working-directory: terraform/prod
               run: terraform init
 
@@ -212,84 +128,6 @@ jobs:
                   name: deployment-plan
                   path: terraform/prod
 
-            # Generate tfvars from config file + secrets from AWS Secrets Manager
-            - name: Generate terraform.tfvars
-              working-directory: terraform/prod
-              run: |
-                  # Start with the config file (non-secret values)
-                  cp terraform.tfvars.config terraform.tfvars
-                  
-                  # Fetch secrets from AWS Secrets Manager
-                  SECURITY=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/security --query 'SecretString' --output text 2>/dev/null || echo '{}')
-                  DATABASE=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/database --query 'SecretString' --output text 2>/dev/null || echo '{}')
-                  ASGARDEO=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/asgardeo --query 'SecretString' --output text 2>/dev/null || echo '{}')
-                  SLACK=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/alertmanager_slack --query 'SecretString' --output text 2>/dev/null || echo '{}')
-                  TEST_RUNNER=$(aws secretsmanager get-secret-value --secret-id ${{ env.SECRETS_PREFIX }}/test_runner --query 'SecretString' --output text 2>/dev/null || echo '{}')
-                  
-                  # Append secrets to tfvars
-                  cat >> terraform.tfvars <<EOF
-
-                  # =============================================================================
-                  # SECRETS (from AWS Secrets Manager)
-                  # =============================================================================
-                  my_ip = "$(echo "$SECURITY" | jq -r '.my_ip')"
-                  ssh_public_key_content = "$(echo "$SECURITY" | jq -r '.ssh_public_key_content')"
-                  db_password = "$(echo "$DATABASE" | jq -r '.password')"
-                  db_username = "$(echo "$DATABASE" | jq -r '.username // "kubestock_admin"')"
-                  
-                  asgardeo_credentials = {
-                    production = {
-                      org_name                 = "$(echo "$ASGARDEO" | jq -r '.production.org_name')"
-                      base_url                 = "$(echo "$ASGARDEO" | jq -r '.production.base_url')"
-                      scim2_url                = "$(echo "$ASGARDEO" | jq -r '.production.scim2_url')"
-                      token_url                = "$(echo "$ASGARDEO" | jq -r '.production.token_url')"
-                      jwks_url                 = "$(echo "$ASGARDEO" | jq -r '.production.jwks_url')"
-                      issuer                   = "$(echo "$ASGARDEO" | jq -r '.production.issuer')"
-                      spa_client_id            = "$(echo "$ASGARDEO" | jq -r '.production.spa_client_id')"
-                      m2m_client_id            = "$(echo "$ASGARDEO" | jq -r '.production.m2m_client_id')"
-                      m2m_client_secret        = "$(echo "$ASGARDEO" | jq -r '.production.m2m_client_secret')"
-                      group_id_admin           = "$(echo "$ASGARDEO" | jq -r '.production.group_id_admin')"
-                      group_id_supplier        = "$(echo "$ASGARDEO" | jq -r '.production.group_id_supplier')"
-                      group_id_warehouse_staff = "$(echo "$ASGARDEO" | jq -r '.production.group_id_warehouse_staff')"
-                    }
-                    staging = {
-                      org_name                 = "$(echo "$ASGARDEO" | jq -r '.staging.org_name')"
-                      base_url                 = "$(echo "$ASGARDEO" | jq -r '.staging.base_url')"
-                      scim2_url                = "$(echo "$ASGARDEO" | jq -r '.staging.scim2_url')"
-                      token_url                = "$(echo "$ASGARDEO" | jq -r '.staging.token_url')"
-                      jwks_url                 = "$(echo "$ASGARDEO" | jq -r '.staging.jwks_url')"
-                      issuer                   = "$(echo "$ASGARDEO" | jq -r '.staging.issuer')"
-                      spa_client_id            = "$(echo "$ASGARDEO" | jq -r '.staging.spa_client_id')"
-                      m2m_client_id            = "$(echo "$ASGARDEO" | jq -r '.staging.m2m_client_id')"
-                      m2m_client_secret        = "$(echo "$ASGARDEO" | jq -r '.staging.m2m_client_secret')"
-                      group_id_admin           = "$(echo "$ASGARDEO" | jq -r '.staging.group_id_admin')"
-                      group_id_supplier        = "$(echo "$ASGARDEO" | jq -r '.staging.group_id_supplier')"
-                      group_id_warehouse_staff = "$(echo "$ASGARDEO" | jq -r '.staging.group_id_warehouse_staff')"
-                    }
-                  }
-                  
-                  alertmanager_slack_webhooks = {
-                    default_url  = "$(echo "$SLACK" | jq -r '.default_url')"
-                    critical_url = "$(echo "$SLACK" | jq -r '.critical_url')"
-                    warning_url  = "$(echo "$SLACK" | jq -r '.warning_url')"
-                  }
-                  
-                  test_runner_credentials = {
-                    client_id     = "$(echo "$TEST_RUNNER" | jq -r '.client_id')"
-                    client_secret = "$(echo "$TEST_RUNNER" | jq -r '.client_secret')"
-                    username      = "$(echo "$TEST_RUNNER" | jq -r '.username')"
-                    password      = "$(echo "$TEST_RUNNER" | jq -r '.password')"
-                  }
-                  EOF
-
             - name: Terraform Apply
               working-directory: terraform/prod
               run: terraform apply -auto-approve tfplan
-
-            # Clean up sensitive files immediately after apply
-            - name: Clean up sensitive files
-              if: always()
-              working-directory: terraform/prod
-              run: |
-                  rm -f terraform.tfvars
-                  rm -f tfplan
