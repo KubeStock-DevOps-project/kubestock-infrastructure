@@ -123,9 +123,8 @@ resource "aws_lb_listener" "https" {
 }
 
 # ========================================
-# HTTP LISTENER (Port 80)
+# HTTP LISTENER (Port 80) - Forward Only for Demo
 # ========================================
-# Redirects to HTTPS if certificate exists, otherwise forwards directly
 
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
@@ -133,20 +132,8 @@ resource "aws_lb_listener" "http" {
   protocol          = "HTTP"
 
   default_action {
-    type = local.enable_https ? "redirect" : "forward"
-    
-    # Forward to target group if no HTTPS
-    target_group_arn = local.enable_https ? null : aws_lb_target_group.kong.arn
-
-    # Redirect to HTTPS if certificate exists
-    dynamic "redirect" {
-      for_each = local.enable_https ? [1] : []
-      content {
-        port        = "443"
-        protocol    = "HTTPS"
-        status_code = "HTTP_301"
-      }
-    }
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.kong.arn
   }
 
   tags = {

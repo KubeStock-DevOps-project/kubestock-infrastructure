@@ -62,14 +62,7 @@ resource "aws_instance" "bastion" {
   }
 }
 
-resource "aws_eip" "bastion" {
-  domain   = "vpc"
-  instance = aws_instance.bastion.id
-
-  tags = {
-    Name = "${var.project_name}-bastion-eip"
-  }
-}
+# EIP removed for demo - using auto-assigned public IP
 
 # ========================================
 # DEVELOPMENT SERVER
@@ -83,7 +76,7 @@ resource "aws_instance" "dev_server" {
   subnet_id                   = var.public_subnet_ids[0]
   vpc_security_group_ids      = [var.dev_server_sg_id]
   key_name                    = aws_key_pair.main.key_name
-  associate_public_ip_address = false
+  associate_public_ip_address = true
 
   root_block_device {
     volume_size = var.dev_server_volume_size
@@ -102,11 +95,4 @@ resource "aws_instance" "dev_server" {
   }
 }
 
-resource "aws_eip" "dev_server" {
-  domain   = "vpc"
-  instance = aws_instance.dev_server.id
-
-  tags = {
-    Name = "${var.project_name}-dev-server-eip"
-  }
-}
+# EIP removed for demo - using auto-assigned public IP

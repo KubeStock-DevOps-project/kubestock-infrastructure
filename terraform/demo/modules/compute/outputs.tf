@@ -18,8 +18,8 @@ output "bastion_instance_id" {
 }
 
 output "bastion_public_ip" {
-  description = "Elastic IP of the bastion host"
-  value       = aws_eip.bastion.public_ip
+  description = "Public IP of the bastion host"
+  value       = aws_instance.bastion.public_ip
 }
 
 output "dev_server_instance_id" {
@@ -28,8 +28,8 @@ output "dev_server_instance_id" {
 }
 
 output "dev_server_public_ip" {
-  description = "Elastic IP of the dev server"
-  value       = aws_eip.dev_server.public_ip
+  description = "Public IP of the dev server"
+  value       = aws_instance.dev_server.public_ip
 }
 
 output "dev_server_instance_state" {

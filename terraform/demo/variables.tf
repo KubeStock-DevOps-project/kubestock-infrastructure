@@ -142,7 +142,8 @@ variable "additional_control_plane_ips" {
 variable "worker_private_ips" {
   description = "Static private IP addresses for each worker node (must align with worker count and target subnets)"
   type        = list(string)
-  default     = ["10.100.10.30", "10.100.10.31", "10.100.11.30", "10.100.11.31"]
+  # Worker 0,2 go to subnet[1]=10.100.11.0/24, Worker 1,3 go to subnet[2]=10.100.12.0/24
+  default     = ["10.100.11.30", "10.100.12.30", "10.100.11.31", "10.100.12.31"]
 }
 
 # ========================================

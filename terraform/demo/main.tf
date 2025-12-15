@@ -172,19 +172,18 @@ module "kubernetes" {
 # }
 
 # ========================================
-# CI/CD MODULE (GitHub Actions) - DEMO
+# CI/CD MODULE - DISABLED FOR DEMO
 # ========================================
-# Using existing production ECR repositories
+# Using production CI/CD - ArgoCD pulls from same ECR
 
-module "cicd" {
-  source = "./modules/cicd"
-
-  project_name        = "${var.project_name}"
-  environment         = var.environment
-  github_org          = var.github_org
-  microservices       = local.microservices
-  ecr_repository_arns = [] # Using existing production ECR
-}
+# module "cicd" {
+#   source = "./modules/cicd"
+#   project_name        = "${var.project_name}"
+#   environment         = var.environment
+#   github_org          = var.github_org
+#   microservices       = local.microservices
+#   ecr_repository_arns = []
+# }
 
 # ========================================
 # RDS MODULE (PostgreSQL Databases)
