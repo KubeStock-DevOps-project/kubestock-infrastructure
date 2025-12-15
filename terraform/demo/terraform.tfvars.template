@@ -1,0 +1,49 @@
+# ========================================
+# TERRAFORM VARIABLES - KUBESTOCK DEMO
+# ========================================
+# Copy this file to terraform.tfvars and fill in your values
+
+# ========================================
+# SECURITY - REQUIRED
+# ========================================
+# Your public IP address for SSH and API access
+my_ip = "YOUR_IP_ADDRESS/32"  # Example: "203.0.113.10/32"
+
+# Your SSH public key content (the entire content of your ~/.ssh/id_rsa.pub file)
+ssh_public_key_content = "ssh-rsa AAAAB3NzaC1... your-email@example.com"
+
+# ========================================
+# OPTIONAL OVERRIDES
+# ========================================
+# Uncomment and modify these if you want to override defaults
+
+# aws_region = "ap-south-1"
+# project_name = "KubeStock-Demo"
+# environment = "demo"
+
+# VPC Configuration (Demo uses 10.100.0.0/16 to avoid conflicts)
+# vpc_cidr = "10.100.0.0/16"
+# public_subnet_cidrs = ["10.100.1.0/24", "10.100.2.0/24", "10.100.3.0/24"]
+# private_subnet_cidrs = ["10.100.10.0/24", "10.100.11.0/24", "10.100.12.0/24"]
+
+# Control Plane
+# control_plane_instance_type = "t3.medium"
+# control_plane_private_ip = "10.100.10.21"
+
+# Workers (4 static workers for demo)
+# worker_instance_type = "t3.medium"
+# worker_volume_size = 25
+# worker_private_ips = ["10.100.10.30", "10.100.10.31", "10.100.11.30", "10.100.11.31"]
+
+# Database
+# db_username = "kubestock_admin"
+# prod_db_instance_class = "db.t4g.medium"
+# prod_db_multi_az = false
+# staging_db_instance_class = "db.t4g.small"
+
+# Domain (update if you have a different demo domain)
+# domain_name = "kubestock-demo.dpiyumal.me"
+# create_hosted_zone = true
+
+# GitHub Organization
+# github_org = "KubeStock-DevOps-project"
