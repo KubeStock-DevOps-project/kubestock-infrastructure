@@ -926,3 +926,64 @@ resource "aws_lb_target_group_attachment" "k8s_api_additional" {
   target_id        = aws_instance.additional_control_plane[count.index].id
   port             = 6443
 }
+
+# ========================================
+# STATIC WORKER TARGET GROUP ATTACHMENTS
+# ========================================
+# Since static workers are not in ASG, we need explicit attachments
+
+# Kong Production HTTP (port 30080)
+resource "aws_lb_target_group_attachment" "kong_http_worker" {
+  count            = var.static_worker_count
+  target_group_arn = aws_lb_target_group.kong_http.arn
+  target_id        = aws_instance.worker[count.index].id
+  port             = 30080
+}
+
+# Kong Staging HTTP (port 30081)
+resource "aws_lb_target_group_attachment" "kong_staging_http_worker" {
+  count            = var.static_worker_count
+  target_group_arn = aws_lb_target_group.kong_staging_http.arn
+  target_id        = aws_instance.worker[count.index].id
+  port             = 30081
+}
+
+# ArgoCD UI (port 30083)
+resource "aws_lb_target_group_attachment" "argocd_ui_worker" {
+  count            = var.static_worker_count
+  target_group_arn = aws_lb_target_group.argocd_ui.arn
+  target_id        = aws_instance.worker[count.index].id
+  port             = 30083
+}
+
+# Grafana (port 30300)
+resource "aws_lb_target_group_attachment" "grafana_worker" {
+  count            = var.static_worker_count
+  target_group_arn = aws_lb_target_group.grafana.arn
+  target_id        = aws_instance.worker[count.index].id
+  port             = 30300
+}
+
+# Prometheus (port 30090)
+resource "aws_lb_target_group_attachment" "prometheus_worker" {
+  count            = var.static_worker_count
+  target_group_arn = aws_lb_target_group.prometheus.arn
+  target_id        = aws_instance.worker[count.index].id
+  port             = 30090
+}
+
+# Alertmanager (port 30093)
+resource "aws_lb_target_group_attachment" "alertmanager_worker" {
+  count            = var.static_worker_count
+  target_group_arn = aws_lb_target_group.alertmanager.arn
+  target_id        = aws_instance.worker[count.index].id
+  port             = 30093
+}
+
+# Kiali (port 30086)
+resource "aws_lb_target_group_attachment" "kiali_worker" {
+  count            = var.static_worker_count
+  target_group_arn = aws_lb_target_group.kiali.arn
+  target_id        = aws_instance.worker[count.index].id
+  port             = 30086
+}

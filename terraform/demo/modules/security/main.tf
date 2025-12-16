@@ -1,7 +1,7 @@
 # ========================================
 # SECURITY MODULE
 # ========================================
-# Security Groups for all infrastructure components
+# Security Groups for all infrastructure components - DEMO: All open
 
 # ========================================
 # BASTION HOST SECURITY GROUP
@@ -12,11 +12,12 @@ resource "aws_security_group" "bastion" {
   description = "Security group for bastion host - kubectl and limited access"
   vpc_id      = var.vpc_id
 
+  # DEMO: Allow all inbound traffic from anywhere
   ingress {
-    description = "SSH from everywhere for admin access"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
+    description = "Allow all traffic from anywhere (DEMO ONLY)"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -42,12 +43,13 @@ resource "aws_security_group" "dev_server" {
   description = "Security group for development server - SSH access to all nodes"
   vpc_id      = var.vpc_id
 
+  # DEMO: Allow all inbound traffic from anywhere
   ingress {
-    description = "SSH from my IP"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.my_ip]
+    description = "Allow all traffic from anywhere (DEMO ONLY)"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -72,12 +74,13 @@ resource "aws_security_group" "k8s_common" {
   description = "Common security group for all K8s nodes - inter-node traffic"
   vpc_id      = var.vpc_id
 
+  # DEMO: Allow all inbound traffic from anywhere
   ingress {
-    description = "All internal traffic between K8s nodes"
+    description = "Allow all traffic from anywhere (DEMO ONLY)"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    self        = true
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -100,143 +103,16 @@ resource "aws_security_group" "k8s_common" {
 
 resource "aws_security_group" "nlb_api" {
   name        = "${var.project_name}-sg-nlb"
-  description = "Security group for NLB - K8s API, staging apps, ArgoCD UI"
+  description = "Security group for NLB - K8s API and Staging Apps access"
   vpc_id      = var.vpc_id
 
-  # K8s API access
+  # DEMO: Allow all inbound traffic from anywhere
   ingress {
-    description     = "K8s API from bastion"
-    from_port       = 6443
-    to_port         = 6443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  ingress {
-    description     = "K8s API from dev server"
-    from_port       = 6443
-    to_port         = 6443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  # Production Istio IngressGateway HTTP
-  ingress {
-    description     = "Istio HTTP from bastion"
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  ingress {
-    description     = "Istio HTTP from dev server"
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  # ArgoCD UI
-  ingress {
-    description     = "ArgoCD UI from bastion"
-    from_port       = 8443
-    to_port         = 8443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  ingress {
-    description     = "ArgoCD UI from dev server"
-    from_port       = 8443
-    to_port         = 8443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  # Staging Istio HTTP (port 81)
-  ingress {
-    description     = "Staging Istio HTTP from bastion"
-    from_port       = 81
-    to_port         = 81
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  ingress {
-    description     = "Staging Istio HTTP from dev server"
-    from_port       = 81
-    to_port         = 81
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  # Grafana (Observability Dashboard)
-  ingress {
-    description     = "Grafana from bastion"
-    from_port       = 3000
-    to_port         = 3000
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  ingress {
-    description     = "Grafana from dev server"
-    from_port       = 3000
-    to_port         = 3000
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  # Prometheus (Metrics Dashboard)
-  ingress {
-    description     = "Prometheus from bastion"
-    from_port       = 9090
-    to_port         = 9090
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  ingress {
-    description     = "Prometheus from dev server"
-    from_port       = 9090
-    to_port         = 9090
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  # Alertmanager (Alert Dashboard)
-  ingress {
-    description     = "Alertmanager from bastion"
-    from_port       = 9093
-    to_port         = 9093
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  ingress {
-    description     = "Alertmanager from dev server"
-    from_port       = 9093
-    to_port         = 9093
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  # Kiali (Istio UI Dashboard)
-  ingress {
-    description     = "Kiali from bastion"
-    from_port       = 20001
-    to_port         = 20001
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  ingress {
-    description     = "Kiali from dev server"
-    from_port       = 20001
-    to_port         = 20001
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
+    description = "Allow all traffic from anywhere (DEMO ONLY)"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -263,28 +139,13 @@ resource "aws_security_group" "control_plane" {
   description = "Security group for Kubernetes control plane"
   vpc_id      = var.vpc_id
 
+  # DEMO: Allow all inbound traffic from anywhere
   ingress {
-    description     = "SSH from dev server"
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  ingress {
-    description     = "K8s API from dev server"
-    from_port       = 6443
-    to_port         = 6443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  ingress {
-    description     = "K8s API from NLB"
-    from_port       = 6443
-    to_port         = 6443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.nlb_api.id]
+    description = "Allow all traffic from anywhere (DEMO ONLY)"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -309,46 +170,13 @@ resource "aws_security_group" "workers" {
   description = "Security group for Kubernetes worker nodes"
   vpc_id      = var.vpc_id
 
+  # DEMO: Allow all inbound traffic from anywhere
   ingress {
-    description     = "SSH from dev server"
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  ingress {
-    description     = "NodePort access from bastion"
-    from_port       = 30000
-    to_port         = 32767
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  ingress {
-    description     = "NodePort access from dev server"
-    from_port       = 30000
-    to_port         = 32767
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  ingress {
-    description     = "NodePort access from NLB (health checks + traffic)"
-    from_port       = 30000
-    to_port         = 32767
-    protocol        = "tcp"
-    security_groups = [aws_security_group.nlb_api.id]
-  }
-
-  # Zero-trust: Only allow Kong API Gateway port (30080) from ALB
-  # This is the only service that should be exposed to production traffic
-  ingress {
-    description     = "Kong API Gateway from ALB (production traffic - port 30080 only)"
-    from_port       = 30080
-    to_port         = 30080
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
+    description = "Allow all traffic from anywhere (DEMO ONLY)"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -367,43 +195,20 @@ resource "aws_security_group" "workers" {
 # ========================================
 # RDS SECURITY GROUP
 # ========================================
-# Allows PostgreSQL access from K8s worker nodes
+# Allows PostgreSQL access - DEMO: Allow all
 
 resource "aws_security_group" "rds" {
   name        = "${var.project_name}-sg-rds"
   description = "Security group for RDS PostgreSQL instances"
   vpc_id      = var.vpc_id
 
+  # DEMO: Allow all inbound traffic from anywhere
   ingress {
-    description     = "PostgreSQL from K8s workers"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.workers.id]
-  }
-
-  ingress {
-    description     = "PostgreSQL from K8s control plane"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.control_plane.id]
-  }
-
-  ingress {
-    description     = "PostgreSQL from dev server (for debugging)"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.dev_server.id]
-  }
-
-  ingress {
-    description     = "PostgreSQL from bastion (for debugging)"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
+    description = "Allow all traffic from anywhere (DEMO ONLY)"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
