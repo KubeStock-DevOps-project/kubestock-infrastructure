@@ -211,7 +211,7 @@ resource "aws_iam_policy" "external_secrets_read" {
           "ecr:GetDownloadUrlForLayer",
           "ecr:BatchCheckLayerAvailability"
         ]
-        Resource = "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/${var.project_name}/*"
+        Resource = "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/kubestock/*"
       }
     ]
   })

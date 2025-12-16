@@ -45,7 +45,7 @@ resource "aws_instance" "bastion" {
   subnet_id                   = var.public_subnet_ids[0]
   vpc_security_group_ids      = [var.bastion_sg_id]
   key_name                    = aws_key_pair.main.key_name
-  associate_public_ip_address = false
+  associate_public_ip_address = true
 
   root_block_device {
     volume_size = 8
@@ -53,7 +53,7 @@ resource "aws_instance" "bastion" {
   }
 
   lifecycle {
-    ignore_changes = [ami, associate_public_ip_address]
+    ignore_changes = [ami]
   }
 
   tags = {
@@ -91,7 +91,7 @@ resource "aws_instance" "dev_server" {
   user_data = file("${path.module}/dev_server_user_data.sh")
 
   lifecycle {
-    ignore_changes = [ami, user_data, associate_public_ip_address]
+    ignore_changes = [ami, user_data]
   }
 }
 
