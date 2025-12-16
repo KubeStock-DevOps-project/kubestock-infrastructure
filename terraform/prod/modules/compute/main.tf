@@ -93,6 +93,7 @@ resource "aws_instance" "dev_server" {
   tags = {
     Name = "${var.project_name}-dev-server"
     Role = "development"
+    Test = "true"
   }
 
   user_data = file("${path.module}/dev_server_user_data.sh")
