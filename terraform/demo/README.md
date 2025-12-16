@@ -2,6 +2,26 @@
 
 This is a complete demo environment for demonstrating cluster recreation and infrastructure provisioning.
 
+## Quick Start (Automated Scripts)
+
+The demo environment can be deployed using 4 automated scripts:
+
+```bash
+# Script 1: (Run from LOCAL machine) - Terraform + Dev Server Setup
+cd infrastructure/terraform/demo
+./1-setup-dev-server.sh
+# This will SSH you into the dev server automatically
+
+# Script 2: (Run from DEV SERVER) - Deploy Kubernetes Cluster
+./2-deploy-cluster.sh
+
+# Script 3: (Run from DEV SERVER) - Initialize Databases  
+./3-init-databases.sh
+
+# Script 4: (Run from DEV SERVER) - Deploy ArgoCD & Applications
+./4-deploy-argocd.sh
+```
+
 ## Key Differences from Production
 
 ### Infrastructure Changes
@@ -25,6 +45,16 @@ This is a complete demo environment for demonstrating cluster recreation and inf
   - worker-2: `10.100.10.31`
   - worker-3: `10.100.11.30`
   - worker-4: `10.100.11.31`
+
+### GitOps Configuration
+- **GitOps Branch**: Uses `demo` branch of kubestock-gitops (not `main`)
+- **No Cluster Autoscaler**: Removed since demo uses static nodes
+- **AWS Secrets**: Uses `kubestock-demo/*` prefix in AWS Secrets Manager
+  - `kubestock-demo/production/db`
+  - `kubestock-demo/staging/db`
+  - `kubestock-demo/production/asgardeo`
+  - `kubestock-demo/staging/asgardeo`
+  - `kubestock-demo/shared/test-runner`
 
 ## Prerequisites
 
@@ -150,6 +180,24 @@ terraform destroy
 4. **No Remote State**: Uses local Terraform state file (not recommended for production)
 5. **Static Nodes**: No auto-scaling - all nodes are static EC2 instances
 6. **Single Master**: Not HA - single control plane node for simplicity
+7. **GitOps Branch**: Uses `demo` branch of kubestock-gitops to avoid affecting production
+8. **Separate Secrets**: Uses `kubestock-demo/*` prefix in AWS Secrets Manager
+
+## ArgoCD Access
+
+After running Script 4, ArgoCD will be available at:
+
+```
+URL: http://<master-ip>:32001
+Username: admin
+Password: (printed in script output)
+```
+
+To access from your local machine via SSH tunnel:
+```bash
+ssh -L 8080:10.100.10.21:32001 ubuntu@<dev-server-ip>
+# Then open: http://localhost:8080
+```
 
 ## Cost Optimization
 
