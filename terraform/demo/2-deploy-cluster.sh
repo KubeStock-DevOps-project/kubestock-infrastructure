@@ -87,6 +87,20 @@ echo "📋 Copying kubeconfig to dev server..."
 mkdir -p ~/.kube
 scp -o StrictHostKeyChecking=no ubuntu@${MASTER_IP}:~/.kube/config ~/.kube/config
 
+# Update kubeconfig to use master's private IP (dev server is in same VPC)
+echo ""
+echo "🔧 Updating kubeconfig to use master private IP..."
+# Replace any server URL with master IP (handles 127.0.0.1, localhost, or any previous NLB)
+sed -i "s|server: https://[^:]*:6443|server: https://${MASTER_IP}:6443|g" ~/.kube/config
+echo "   API Server: https://${MASTER_IP}:6443"
+
+# Install kubectl on dev server
+echo ""
+echo "🔧 Installing kubectl..."
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+
 # Verify cluster from dev server
 echo ""
 echo "🧪 Verifying cluster from dev server..."
