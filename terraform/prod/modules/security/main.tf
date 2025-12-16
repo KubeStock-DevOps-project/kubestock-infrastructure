@@ -39,7 +39,7 @@ resource "aws_security_group" "bastion" {
 
 resource "aws_security_group" "dev_server" {
   name        = "${var.project_name}-sg-dev-server"
-  description = "Security group for development server - SSH access to all nodes ingress only for my IP"
+  description = "Security group for development server - SSH access to all nodes"
   vpc_id      = var.vpc_id
 
   ingress {
