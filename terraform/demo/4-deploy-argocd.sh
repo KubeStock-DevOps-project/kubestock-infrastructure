@@ -135,21 +135,26 @@ kubectl create namespace external-secrets 2>/dev/null || true
 if kubectl get secret aws-external-secrets-creds -n external-secrets &> /dev/null; then
     echo "   AWS credentials secret already exists, skipping..."
 else
-    # Check if IAM user has access keys
-    EXISTING_KEYS=$(aws iam list-access-keys --user-name ${ESO_IAM_USER} --query 'AccessKeyMetadata[].AccessKeyId' --output text 2>/dev/null || echo "")
+    # Get existing access keys (sorted by creation date, oldest first)
+    EXISTING_KEYS=$(aws iam list-access-keys --user-name ${ESO_IAM_USER} \
+        --query 'AccessKeyMetadata | sort_by(@, &CreateDate)[*].AccessKeyId' --output text 2>/dev/null || echo "")
+    KEY_COUNT=$(echo "$EXISTING_KEYS" | wc -w)
     
-    if [ -z "$EXISTING_KEYS" ]; then
-        echo "   Creating new access key for ${ESO_IAM_USER}..."
-        ACCESS_KEY_JSON=$(aws iam create-access-key --user-name ${ESO_IAM_USER})
-        AWS_ACCESS_KEY_ID=$(echo $ACCESS_KEY_JSON | jq -r '.AccessKey.AccessKeyId')
-        AWS_SECRET_ACCESS_KEY=$(echo $ACCESS_KEY_JSON | jq -r '.AccessKey.SecretAccessKey')
-    else
-        echo "   Access key exists for ${ESO_IAM_USER}: $EXISTING_KEYS"
-        echo ""
-        read -p "   Enter AWS_ACCESS_KEY_ID: " AWS_ACCESS_KEY_ID
-        read -s -p "   Enter AWS_SECRET_ACCESS_KEY: " AWS_SECRET_ACCESS_KEY
-        echo ""
+    echo "   Found $KEY_COUNT existing access key(s) for ${ESO_IAM_USER}"
+    
+    # AWS allows max 2 keys per user - delete oldest if at limit
+    if [ "$KEY_COUNT" -ge 2 ]; then
+        OLDEST_KEY=$(echo "$EXISTING_KEYS" | awk '{print $1}')
+        echo "   Deleting oldest access key: $OLDEST_KEY (AWS allows max 2 keys)"
+        aws iam delete-access-key --user-name ${ESO_IAM_USER} --access-key-id "$OLDEST_KEY"
     fi
+    
+    # Create new access key
+    echo "   Creating new access key for ${ESO_IAM_USER}..."
+    ACCESS_KEY_JSON=$(aws iam create-access-key --user-name ${ESO_IAM_USER})
+    AWS_ACCESS_KEY_ID=$(echo $ACCESS_KEY_JSON | jq -r '.AccessKey.AccessKeyId')
+    AWS_SECRET_ACCESS_KEY=$(echo $ACCESS_KEY_JSON | jq -r '.AccessKey.SecretAccessKey')
+    echo "   Created access key: $AWS_ACCESS_KEY_ID"
     
     kubectl create secret generic aws-external-secrets-creds \
         --from-literal=access-key-id="$AWS_ACCESS_KEY_ID" \
