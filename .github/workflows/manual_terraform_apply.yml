@@ -13,6 +13,7 @@ env:
 
 jobs:
     validate-input:
+        if : vars.TERRAFORM_PROD_ENABLED == 'true'
         runs-on: ubuntu-latest
         steps:
             - name: Validate confirmation input
@@ -24,6 +25,7 @@ jobs:
                   echo "✅ Confirmation valid. Proceeding with Terraform apply..."
 
     plan:
+        if : vars.TERRAFORM_PROD_ENABLED == 'true'
         needs: [validate-input]
         runs-on: ubuntu-latest
         permissions:
@@ -109,6 +111,7 @@ jobs:
                         .write();
 
     apply:
+        if : vars.TERRAFORM_PROD_ENABLED == 'true'
         runs-on: ubuntu-latest
         needs: [plan]
         permissions:

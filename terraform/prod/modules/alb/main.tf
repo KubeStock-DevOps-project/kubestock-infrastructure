@@ -16,7 +16,7 @@ resource "aws_lb" "main" {
   security_groups    = [var.alb_security_group_id]
   subnets            = var.public_subnet_ids
 
-  enable_deletion_protection = var.environment == "production" ? true : false
+  enable_deletion_protection = false
   enable_http2               = true
 
   # Access logs (optional - uncomment to enable)
@@ -29,6 +29,12 @@ resource "aws_lb" "main" {
   tags = {
     Name        = "${var.project_name}-alb"
     Environment = var.environment
+  }
+
+  lifecycle {
+    create_before_destroy = false
+    # Prevent accidental deletion but allow terraform destroy
+    prevent_destroy = false
   }
 }
 
